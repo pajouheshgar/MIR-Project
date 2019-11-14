@@ -145,18 +145,27 @@ class PersianTextCleaner:
         u' ;': '.',
         u'; ': '.',
     }
+    rep5 = {
+        u'؟': '.',
+        u'?': '.',
+        u'!': '.',
+        u'؛': '.',
+        u';': '.',
+    }
 
     reg0 = dict((re.escape(k), v) for k, v in list(rep0.items()))
     reg1 = dict((re.escape(k), v) for k, v in list(rep1.items()))
     reg2 = dict((re.escape(k), v) for k, v in list(rep2.items()))
     reg3 = dict((re.escape(k), v) for k, v in list(rep3.items()))
     reg4 = dict((re.escape(k), v) for k, v in list(rep4.items()))
+    reg5 = dict((re.escape(k), v) for k, v in list(rep5.items()))
 
     pattern0 = re.compile("|".join(reg0.keys()))
     pattern1 = re.compile("|".join(reg1.keys()))
     pattern2 = re.compile("|".join(reg2.keys()))
     pattern3 = re.compile("|".join(reg3.keys()))
     pattern4 = re.compile("|".join(reg4.keys()))
+    pattern5 = re.compile("|".join(reg5.keys()))
 
     def __init__(self, special_rep):
         self.special_rep = special_rep
@@ -166,12 +175,12 @@ class PersianTextCleaner:
         self.special_pattern = special_pattern
 
     def replace_numbers_with_smth(self, text):
-        content = re.sub(u"[0-9۰-۹]*[.]?[0-9۰-۹]+", u"1", text)
+        content = re.sub(u"[0-9۰-۹]*[.]?[0-9۰-۹]+", u" ", text)
         return content
 
     def replace_versions_with_smth(self, text):
-        content = re.sub(u"[a-zA-z]*[0-9۰-۹]*[.]?[0-9۰-۹]+[a-zA-z]+", "eaae", text)
-        content = re.sub(u"[a-zA-z]+[0-9۰-۹]*[.]?[0-9۰-۹]+[a-zA-z]*", "eaae", content)
+        content = re.sub(u"[a-zA-z]*[0-9۰-۹]*[.]?[0-9۰-۹]+[a-zA-z]+", " ", text)
+        content = re.sub(u"[a-zA-z]+[0-9۰-۹]*[.]?[0-9۰-۹]+[a-zA-z]*", " ", content)
         return content
 
     def pre_clean(self, text):
@@ -204,6 +213,7 @@ class PersianTextCleaner:
         content = self.pattern3.sub(lambda m: self.reg3[re.escape(m.group(0))], content)
         content = self.pattern4.sub(lambda m: self.reg4[re.escape(m.group(0))], content)
         content = self.pattern2.sub(lambda m: self.reg2[re.escape(m.group(0))], content)
+        content = self.pattern5.sub(lambda m: self.reg5[re.escape(m.group(0))], content)
         content = re.sub(u"(eaae)+", u"eaae", content)
         content = re.sub(u"1+", u"1", content)
 

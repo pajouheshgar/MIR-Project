@@ -1,4 +1,8 @@
-from hazm import Normalizer, word_tokenize, stopwords_list, Stemmer
+import re
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
+import string
+from hazm import Normalizer, word_tokenize, Stemmer
 
 from Code.Utils.clean_persian_text import PersianTextCleaner
 
@@ -6,19 +10,69 @@ from Code.Utils.clean_persian_text import PersianTextCleaner
 class PersianTextPreProcessor:
     def __init__(self):
         self.persian_text_cleaner = PersianTextCleaner({})
-        self.stop_words = set(stopwords_list())
         self.stemmer = Stemmer()
         self.normalizer = Normalizer()
 
+    def process_single_word(self, word):
+        word = word.lower()
+        word = re.sub('\d+', '', word)
+        word = word.translate(str.maketrans('', '', string.punctuation))
+        word = word.strip()
+        word = self.normalizer.normalize(word)
+        word = self.stemmer.stem(word)
+        return word
+
     def pre_stopword_process(self, text):
-        text = self.persian_text_cleaner.get_sentences(text)
+        # text = self.persian_text_cleaner.get_sentences(text)
+        text = text.lower()
+        text = re.sub('\d+', '', text)
+        text = text.translate(str.maketrans('', '', string.punctuation))
+        text = text.strip()
         normalized_text = self.normalizer.normalize(text)
         words = word_tokenize(normalized_text)
         words = [w for w in words if w != '.']
         return words
 
-    def clean_text(self, text):
+    def clean_text(self, text, stopwords):
         words = self.pre_stopword_process(text)
-        words = [w for w in words if w not in self.stop_words]
+        words = [w for w in words if w not in stopwords]
+        words = [self.stemmer.stem(w) for w in words]
+        return words
+
+    def remove_stop_words_and_stem(self, words, stopwords):
+        words = [w for w in words if w not in stopwords]
+        words = [self.stemmer.stem(w) for w in words]
+        return words
+
+
+class EnglishTextPreProcessor:
+    def __init__(self):
+        self.persian_text_cleaner = PersianTextCleaner({})
+        self.stemmer = PorterStemmer()
+
+    def process_single_word(self, word):
+        word = word.lower()
+        word = re.sub('\d+', '', word)
+        word = word.translate(str.maketrans('', '', string.punctuation))
+        word = word.strip()
+        word = self.stemmer.stem(word)
+        return word
+
+    def pre_stopword_process(self, text):
+        text = text.lower()
+        text = re.sub('\d+', '', text)
+        text = text.translate(str.maketrans('', '', string.punctuation))
+        text = text.strip()
+        words = word_tokenize(text)
+        return words
+
+    def clean_text(self, text, stopwords):
+        words = self.pre_stopword_process(text)
+        words = [w for w in words if w not in stopwords]
+        words = [self.stemmer.stem(w) for w in words]
+        return words
+
+    def remove_stop_words_and_stem(self, words, stopwords):
+        words = [w for w in words if w not in stopwords]
         words = [self.stemmer.stem(w) for w in words]
         return words

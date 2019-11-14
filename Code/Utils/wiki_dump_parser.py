@@ -43,8 +43,12 @@ def xml_to_csv(filename, csv_separator):
             return
 
         if bytes_var == '-1':
-            s = data.replace("\"", "\"\"")
+        #     if 'تونس' in data:
+        #         print(data)
+            s = data.replace("\"", " ")
+            s = s.replace("\'", " ")
             bytes_var = "\"{}\"".format(s)
+
 
             # print(data)
 
@@ -67,7 +71,7 @@ def xml_to_csv(filename, csv_separator):
                 if _current_tag == 'id':
                     contributor_id = data
                 elif _current_tag == 'username':
-                    contributor_name = '|' + data + '|'
+                    contributor_name = '\"' + data + '\"'
                 elif _current_tag == 'ip':
                     contributor_id = data
                     contributor_name = 'Anonymous'
@@ -126,7 +130,7 @@ def xml_to_csv(filename, csv_separator):
     parser.EndElementHandler = end_tag
     parser.CharacterDataHandler = data_handler
     parser.buffer_text = True
-    parser.buffer_size = 1024
+    parser.buffer_size = 2 ** 18
 
     # writing header for output csv file
     output_csv = open(filename[0:-3] + "csv", 'w', encoding='utf8')
