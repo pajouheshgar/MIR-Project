@@ -7,8 +7,6 @@ if __name__ == '__main__':
     parser.xml_to_csv(persian_wiki_xml_data_dir, sep)
     persian_wiki_csv_data_dir = "Data/Phase 1/Persian.csv"
     df = pnd.read_csv(persian_wiki_csv_data_dir)
-    print(len(df), sep=sep)
-    print(df['page_title'][0])
-    print(df['text'][0][:100])
-
-
+    df = df[['page_title', 'text']]
+    df.columns = ["Title", "Text"]
+    df.to_csv("Data/Phase 1/Persian.csv", header=True, index=False)

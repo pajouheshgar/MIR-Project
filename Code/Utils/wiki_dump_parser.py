@@ -51,7 +51,7 @@ def xml_to_csv(filename, csv_separator):
         if _parent:
             if _parent == 'page':
                 if _current_tag == 'title':
-                    page_title = '|' + data + '|'
+                    page_title = '\"' + data + '\"'
                 elif _current_tag == 'id':
                     page_id = data
                     if Debug:
