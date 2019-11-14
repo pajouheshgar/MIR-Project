@@ -63,6 +63,7 @@ class SearchEngine:
             self.postings = defaultdict(lambda: [])
             self.positional_index = defaultdict(lambda: [])
             self.bigram_index = defaultdict(lambda: set())
+            self.tfdf = defaultdict(lambda : [0, 0])
             self.build_index()
             with open(self.cache_dir + "postings", "wb") as f:
                 logger.info("Saving postings into a file")
@@ -75,6 +76,10 @@ class SearchEngine:
             with open(self.cache_dir + "bigram_index", "wb") as f:
                 logger.info("Saving bigram_index into a file")
                 pickle.dump(dict(self.bigram_index), f)
+
+            with open(self.cache_dir + "tfdf", "wb") as f:
+                logger.info("Saving tfdf into a file")
+                pickle.dump(dict(self.tfdf), f)
         else:
             with open(self.cache_dir + "vocab_frequency", "rb") as f:
                 logger.info("Loading vocab_frequency from file")
@@ -89,16 +94,20 @@ class SearchEngine:
                 self.document_words = pickle.load(f)
 
             with open(self.cache_dir + "postings", "rb") as f:
-                logger.info("Loading postings into a file")
+                logger.info("Loading postings from file")
                 self.postings = pickle.load(f)
 
             with open(self.cache_dir + "positional_index", "rb") as f:
-                logger.info("Loading positional_index into a file")
+                logger.info("Loading positional_index from file")
                 self.positional_index = pickle.load(f)
 
             with open(self.cache_dir + "bigram_index", "rb") as f:
-                logger.info("Loading bigram_index into a file")
+                logger.info("Loading bigram_index from file")
                 self.bigram_index = pickle.load(f)
+
+            with open(self.cache_dir + "tfdf", "rb") as f:
+                logger.info("Loading tfdf from file")
+                self.tfdf = pickle.load(f)
 
     def infer_stopwords(self):
         logger.info("Inferring stopwords from documents")
@@ -130,14 +139,17 @@ class SearchEngine:
         logger.info("Building index from documents...")
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for j, word in enumerate(doc_words):
+                self.tfdf[word][0] += 1
                 if len(self.postings[word]) == 0:
                     self.postings[word].append(i)
                     self.positional_index[word].append([])
                     self.positional_index[word][-1].append(j)
+                    self.tfdf[word][1] += 1
                 elif self.postings[word][-1] != i:
                     self.postings[word].append(i)
                     self.positional_index[word].append([])
                     self.positional_index[word][-1].append(j)
+                    self.tfdf[word][1] += 1
                 else:
                     self.positional_index[word][-1].append(j)
 
@@ -170,7 +182,7 @@ if __name__ == '__main__':
 
     english_text_preprocessor = EnglishTextPreProcessor()
     dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
-    search_engine = SearchEngine('English', dataframe, english_text_preprocessor, False)
+    search_engine = SearchEngine('English', dataframe, english_text_preprocessor, True)
 
     print(search_engine.get_vocab_posting('News'))
     print(search_engine.get_vocab_positions('News'))
