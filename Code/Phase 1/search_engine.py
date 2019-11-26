@@ -61,10 +61,13 @@ class SearchEngine:
                 pickle.dump(self.document_words, f)
 
             self.postings = defaultdict(lambda: [])
+            self.variable_length_compressed = defaultdict(lambda: [])
             self.positional_index = defaultdict(lambda: [])
             self.bigram_index = defaultdict(lambda: set())
             self.tfdf = defaultdict(lambda : [0, 0])
             self.build_index()
+            self.variable_length_compression()
+
             with open(self.cache_dir + "postings", "wb") as f:
                 logger.info("Saving postings into a file")
                 pickle.dump(dict(self.postings), f)
@@ -80,6 +83,12 @@ class SearchEngine:
             with open(self.cache_dir + "tfdf", "wb") as f:
                 logger.info("Saving tfdf into a file")
                 pickle.dump(dict(self.tfdf), f)
+
+            with open(self.cache_dir + "variable_length_compressed", "wb") as f:
+                logger.info("Saving postings into a file")
+                pickle.dump(dict(self.variable_length_compressed), f)
+
+
         else:
             with open(self.cache_dir + "vocab_frequency", "rb") as f:
                 logger.info("Loading vocab_frequency from file")
@@ -108,6 +117,16 @@ class SearchEngine:
             with open(self.cache_dir + "tfdf", "rb") as f:
                 logger.info("Loading tfdf from file")
                 self.tfdf = pickle.load(f)
+
+            with open(self.cache_dir + "variable_length_compressed", "wb") as f:
+                logger.info("Loading compressed postings from file")
+                self.variable_length_compressed = pickle.load(f)
+
+        posting_size = get_size_dict_of_list(self.postings)
+        variable_length_compressed_size = get_size_dict_of_list(self.variable_length_compressed)
+
+        logger.info("Size of postings before compression {}".format(posting_size))
+        logger.info("Size of postings after variable-length compression {}".format(variable_length_compressed_size))
 
     def infer_stopwords(self):
         logger.info("Inferring stopwords from documents")
@@ -156,6 +175,19 @@ class SearchEngine:
                 bigrams = extract_bigrams(word)
                 for bigram in bigrams:
                     self.bigram_index[bigram].add(word)
+
+    def variable_length_compression(self):
+        for word, posting in self.postings.items():
+            last = 0
+            for id in posting:
+                self.variable_length_compressed[word] += number_to_variable_length(id - last)
+                last = id
+
+    def variable_length_decompress(self):
+        postings = defaultdict(lambda: [])
+        for word, posting in self.variable_length_compressed.items():
+            postings[word] = variable_length_to_posting(posting)
+        return postings
 
     def get_vocab_posting(self, vocab):
         vocab = self.preprocessor.process_single_word(vocab)
