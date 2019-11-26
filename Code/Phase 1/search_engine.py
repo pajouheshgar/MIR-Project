@@ -67,7 +67,6 @@ class SearchEngine:
             self.tfdf = defaultdict(lambda : [0, 0])
             self.build_index()
             self.variable_length_compression()
-
             with open(self.cache_dir + "postings", "wb") as f:
                 logger.info("Saving postings into a file")
                 pickle.dump(dict(self.postings), f)

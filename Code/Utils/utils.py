@@ -1,5 +1,4 @@
-from numpy import uint8, uint16
-from sys import getsizeof
+import numpy as np
 
 def extract_bigrams(word):
     bigrams = []
@@ -12,11 +11,11 @@ def number_to_variable_length(gap):
     res = []
 
     if gap == 0:
-        return [uint8(128)]
+        return [np.uint8(128)]
 
     while gap:
         mod = gap % 128
-        res.append(uint8(mod))
+        res.append(np.uint8(mod))
         gap //= 128
 
     res[0] += 128
@@ -37,13 +36,11 @@ def variable_length_to_posting(variable_length):
     return posting[1:]
 
 def get_size_list(lst):
-    size = 0
-    for item in lst:
-        size += type(item).__itemsize__
-    return size
+    arr = np.asarray(lst, dtype=type(lst[0]))
+    return arr.itemsize * np.prod(arr.shape)
 
 def get_size_dict_of_list(dictionary):
     size = 0
     for key, value in dictionary.items():
-        size += getsizeof(key) + get_size_list(value)
+        size += get_size_list(value)
     return size
