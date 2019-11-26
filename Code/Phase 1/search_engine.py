@@ -62,11 +62,13 @@ class SearchEngine:
 
             self.postings = defaultdict(lambda: [])
             self.variable_length_compressed = defaultdict(lambda: [])
+            self.gamma_compressed = defaultdict(lambda: [])
             self.positional_index = defaultdict(lambda: [])
             self.bigram_index = defaultdict(lambda: set())
             self.tfdf = defaultdict(lambda : [0, 0])
             self.build_index()
             self.variable_length_compression()
+            self.gamma_compression()
             with open(self.cache_dir + "postings", "wb") as f:
                 logger.info("Saving postings into a file")
                 pickle.dump(dict(self.postings), f)
@@ -84,8 +86,12 @@ class SearchEngine:
                 pickle.dump(dict(self.tfdf), f)
 
             with open(self.cache_dir + "variable_length_compressed", "wb") as f:
-                logger.info("Saving postings into a file")
+                logger.info("Saving variable length compressed into a file")
                 pickle.dump(dict(self.variable_length_compressed), f)
+
+            with open(self.cache_dir + "gamma_compressed", "wb") as f:
+                logger.info("Saving gamma compressed into a file")
+                pickle.dump(dict(self.gamma_compressed), f)
 
 
         else:
@@ -117,15 +123,21 @@ class SearchEngine:
                 logger.info("Loading tfdf from file")
                 self.tfdf = pickle.load(f)
 
-            with open(self.cache_dir + "variable_length_compressed", "wb") as f:
-                logger.info("Loading compressed postings from file")
+            with open(self.cache_dir + "variable_length_compressed", "rb") as f:
+                logger.info("Loading variable length compressed postings from file")
+                self.variable_length_compressed = pickle.load(f)
+
+            with open(self.cache_dir + "gamma_compressed", "rb") as f:
+                logger.info("Loading gamma compressed postings from file")
                 self.variable_length_compressed = pickle.load(f)
 
         posting_size = get_size_dict_of_list(self.postings)
         variable_length_compressed_size = get_size_dict_of_list(self.variable_length_compressed)
+        gamma_compressed_size = get_size_dict_of_list(self.gamma_compressed)
 
         logger.info("Size of postings before compression {}".format(posting_size))
         logger.info("Size of postings after variable-length compression {}".format(variable_length_compressed_size))
+        logger.info("Size of postings after gamma compression {}".format(gamma_compressed_size))
 
     def infer_stopwords(self):
         logger.info("Inferring stopwords from documents")
@@ -159,12 +171,12 @@ class SearchEngine:
             for j, word in enumerate(doc_words):
                 self.tfdf[word][0] += 1
                 if len(self.postings[word]) == 0:
-                    self.postings[word].append(i)
+                    self.postings[word].append(i + 1)
                     self.positional_index[word].append([])
                     self.positional_index[word][-1].append(j)
                     self.tfdf[word][1] += 1
                 elif self.postings[word][-1] != i:
-                    self.postings[word].append(i)
+                    self.postings[word].append(i + 1)
                     self.positional_index[word].append([])
                     self.positional_index[word][-1].append(j)
                     self.tfdf[word][1] += 1
@@ -179,8 +191,22 @@ class SearchEngine:
         for word, posting in self.postings.items():
             last = 0
             for id in posting:
+                print(type(number_to_variable_length(id - last)[0]))
                 self.variable_length_compressed[word] += number_to_variable_length(id - last)
                 last = id
+
+    def gamma_compression(self):
+        for word, posting in self.postings.items():
+            last = 0
+            for id in posting:
+                self.gamma_compressed[word] += number_to_gamma(id - last)
+                last = id
+
+    def gamma_decompress(self):
+        postings = defaultdict(lambda: [])
+        for word, posting in self.gamma_compressed.items():
+            postings[word] = gamma_to_posting(posting)
+        return postings
 
     def variable_length_decompress(self):
         postings = defaultdict(lambda: [])

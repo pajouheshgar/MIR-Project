@@ -7,18 +7,60 @@ def extract_bigrams(word):
 
     return bigrams
 
+def number_to_gamma(gap):
+    res = []
+    while gap:
+        res.append(np.bool(gap % 2))
+        gap //= 2
+    res = res[:-1]
+    n = len(res)
+    res.append(np.bool(0))
+    res += [np.bool(1) for _ in range(n)]
+    res.reverse()
+    return res
+
+def gamma_to_posting(gamma):
+    on_length = True
+    length = 0
+    num = 0
+    posting = [0]
+    for bit in gamma:
+        if on_length:
+            if length == 0 and not bit:
+                posting.append(1 + posting[-1])
+                continue
+            length += 1
+            if not bit:
+                on_length = False
+                num = 1
+                length -= 1
+        else:
+            if length > 0:
+                length -= 1
+                num *= 2
+                num += bit
+            if length == 0:
+                posting.append(num + posting[-1])
+                num = 0
+                on_length = True
+    return posting[1:]
+
 def number_to_variable_length(gap):
     res = []
 
     if gap == 0:
         return [np.uint8(128)]
 
+    last = 0
     while gap:
         mod = gap % 128
-        res.append(np.uint8(mod))
+        if last:
+            res.append(np.uint8(mod))
+        else:
+            res.append(np.uint8(mod + 128))
+            last = 1
         gap //= 128
 
-    res[0] += 128
     res.reverse()
     return res
 
@@ -35,12 +77,9 @@ def variable_length_to_posting(variable_length):
             num += byte
     return posting[1:]
 
-def get_size_list(lst):
-    arr = np.asarray(lst, dtype=type(lst[0]))
-    return arr.itemsize * np.prod(arr.shape)
-
 def get_size_dict_of_list(dictionary):
     size = 0
+    size_map = {np.bool: 1./8., np.uint8: 1, int: 8}
     for key, value in dictionary.items():
-        size += get_size_list(value)
-    return size
+        size += len(value) * size_map[type(value[0])]
+    return int(np.ceil(size))
