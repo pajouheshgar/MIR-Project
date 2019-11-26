@@ -1,4 +1,4 @@
-from numpy import uint8
+from numpy import uint8, uint16
 from sys import getsizeof
 
 def extract_bigrams(word):
@@ -39,7 +39,7 @@ def variable_length_to_posting(variable_length):
 def get_size_list(lst):
     size = 0
     for item in lst:
-        size += getsizeof(item)
+        size += type(item).__itemsize__
     return size
 
 def get_size_dict_of_list(dictionary):
