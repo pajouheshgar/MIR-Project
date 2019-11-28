@@ -215,14 +215,17 @@ class SearchEngine:
                                            reverse=True)
         return [word for word, _ in jaccard_sorted_word_count[:top_k]]
 
-    def query_spell_correction(self, vocab):
-        vocab = self.preprocessor.process_single_word(vocab)
-        if vocab in self.postings:
-            return vocab
-        else:
-            candidate_vocabs = self.select_jaccard(vocab, 20)
-            sorted_candidates = sorted(candidate_vocabs, key=lambda x: edit_distance(x, vocab), reverse=True)
-            return sorted_candidates[0]
+    def query_spell_correction(self, query):
+        query_terms = self.preprocessor.clean_text(query, self.stopwords)
+        corrected_query_terms = []
+        for query_term in query_terms:
+            if query_term in self.postings:
+                corrected_query_terms.append(query_term)
+            else:
+                candidate_vocabs = self.select_jaccard(query_term, 20)
+                sorted_candidates = sorted(candidate_vocabs, key=lambda x: edit_distance(x, query_term), reverse=True)
+                corrected_query_terms.append(sorted_candidates[0])
+        return corrected_query_terms
 
     def gamma_decompress(self):
         postings = defaultdict(lambda: [])
