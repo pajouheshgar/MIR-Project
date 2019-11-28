@@ -61,10 +61,14 @@ class SearchEngine:
                 pickle.dump(self.document_words, f)
 
             self.postings = defaultdict(lambda: [])
+            self.variable_length_compressed = defaultdict(lambda: [])
+            self.gamma_compressed = defaultdict(lambda: [])
             self.positional_index = defaultdict(lambda: [])
             self.bigram_index = defaultdict(lambda: set())
             self.tfdf = defaultdict(lambda: [0, 0])  # Term frequency, document frequency
             self.build_index()
+            self.variable_length_compression()
+            self.gamma_compression()
             with open(self.cache_dir + "postings", "wb") as f:
                 logger.info("Saving postings into a file")
                 pickle.dump(dict(self.postings), f)
@@ -80,6 +84,16 @@ class SearchEngine:
             with open(self.cache_dir + "tfdf", "wb") as f:
                 logger.info("Saving tfdf into a file")
                 pickle.dump(dict(self.tfdf), f)
+
+            with open(self.cache_dir + "variable_length_compressed", "wb") as f:
+                logger.info("Saving variable length compressed into a file")
+                pickle.dump(dict(self.variable_length_compressed), f)
+
+            with open(self.cache_dir + "gamma_compressed", "wb") as f:
+                logger.info("Saving gamma compressed into a file")
+                pickle.dump(dict(self.gamma_compressed), f)
+
+
         else:
             with open(self.cache_dir + "vocab_frequency", "rb") as f:
                 logger.info("Loading vocab_frequency from file")
@@ -108,6 +122,22 @@ class SearchEngine:
             with open(self.cache_dir + "tfdf", "rb") as f:
                 logger.info("Loading tfdf from file")
                 self.tfdf = pickle.load(f)
+
+            with open(self.cache_dir + "variable_length_compressed", "rb") as f:
+                logger.info("Loading variable length compressed postings from file")
+                self.variable_length_compressed = pickle.load(f)
+
+            with open(self.cache_dir + "gamma_compressed", "rb") as f:
+                logger.info("Loading gamma compressed postings from file")
+                self.variable_length_compressed = pickle.load(f)
+
+        posting_size = get_size_dict_of_list(self.postings)
+        variable_length_compressed_size = get_size_dict_of_list(self.variable_length_compressed)
+        gamma_compressed_size = get_size_dict_of_list(self.gamma_compressed)
+
+        logger.info("Size of postings before compression {}".format(posting_size))
+        logger.info("Size of postings after variable-length compression {}".format(variable_length_compressed_size))
+        logger.info("Size of postings after gamma compression {}".format(gamma_compressed_size))
 
     def infer_stopwords(self):
         logger.info("Inferring stopwords from documents")
@@ -139,23 +169,70 @@ class SearchEngine:
         logger.info("Building index from documents...")
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for j, word in enumerate(doc_words):
-                self.tfdf[word][0] += 1
                 if len(self.postings[word]) == 0:
-                    self.postings[word].append(i)
-                    self.positional_index[word].append([])
-                    self.positional_index[word][-1].append(j)
-                    self.tfdf[word][1] += 1
+                    self.postings[word].append(i + 1)
+                    self.positional_index[word].append([j])
                 elif self.postings[word][-1] != i:
-                    self.postings[word].append(i)
-                    self.positional_index[word].append([])
-                    self.positional_index[word][-1].append(j)
-                    self.tfdf[word][1] += 1
+                    self.postings[word].append(i + 1)
+                    self.positional_index[word].append([j])
                 else:
                     self.positional_index[word][-1].append(j)
 
                 bigrams = extract_bigrams(word)
                 for bigram in bigrams:
                     self.bigram_index[bigram].add(word)
+
+    def variable_length_compression(self):
+        for word, posting in self.postings.items():
+            last = 0
+            for id in posting:
+                self.variable_length_compressed[word] += number_to_variable_length(id - last)
+                last = id
+
+    def gamma_compression(self):
+        for word, posting in self.postings.items():
+            last = 0
+            for id in posting:
+                self.gamma_compressed[word] += number_to_gamma(id - last)
+                last = id
+
+    def select_jaccard(self, vocab, top_k):
+
+        def count(bigram):
+            return bigram, sum([bigram in bigram_vocab_list[i] for i in range(len(bigram_vocab_list))])
+
+        bigrams = extract_bigrams(vocab)
+        bigram_vocab_list = [list(self.bigram_index[bigram]) for bigram in bigrams if bigram in self.bigram_index]
+        all_candidates = set.union(*map(set, bigram_vocab_list))
+        word_count = list(map(count, all_candidates))
+        jaccard_sorted_word_count = sorted(word_count,
+                                           key=lambda x: float(x[1]) / (len(x[0]) - 1 + len(bigrams) - x[1]),
+                                           reverse=True)
+        return [word for word, _ in jaccard_sorted_word_count[:top_k]]
+
+    def query_spell_correction(self, query):
+        query_terms = self.preprocessor.clean_text(query, self.stopwords)
+        corrected_query_terms = []
+        for query_term in query_terms:
+            if query_term in self.postings:
+                corrected_query_terms.append(query_term)
+            else:
+                candidate_vocabs = self.select_jaccard(query_term, 20)
+                sorted_candidates = sorted(candidate_vocabs, key=lambda x: edit_distance(x, query_term), reverse=True)
+                corrected_query_terms.append(sorted_candidates[0])
+        return corrected_query_terms
+
+    def gamma_decompress(self):
+        postings = defaultdict(lambda: [])
+        for word, posting in self.gamma_compressed.items():
+            postings[word] = gamma_to_posting(posting)
+        return postings
+
+    def variable_length_decompress(self):
+        postings = defaultdict(lambda: [])
+        for word, posting in self.variable_length_compressed.items():
+            postings[word] = variable_length_to_posting(posting)
+        return postings
 
     def get_vocab_posting(self, vocab):
         vocab = self.preprocessor.process_single_word(vocab)
