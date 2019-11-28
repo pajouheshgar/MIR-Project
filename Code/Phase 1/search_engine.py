@@ -68,6 +68,8 @@ class SearchEngine:
             self.build_index()
             self.variable_length_compression()
             self.gamma_compression()
+            self.tf_table = self.build_tf()
+
             with open(self.cache_dir + "postings", "wb") as f:
                 logger.info("Saving postings into a file")
                 pickle.dump(dict(self.postings), f)
@@ -80,10 +82,6 @@ class SearchEngine:
                 logger.info("Saving bigram_index into a file")
                 pickle.dump(dict(self.bigram_index), f)
 
-            with open(self.cache_dir + "tfdf", "wb") as f:
-                logger.info("Saving tfdf into a file")
-                pickle.dump(dict(self.tfdf), f)
-
             with open(self.cache_dir + "variable_length_compressed", "wb") as f:
                 logger.info("Saving variable length compressed into a file")
                 pickle.dump(dict(self.variable_length_compressed), f)
@@ -92,6 +90,13 @@ class SearchEngine:
                 logger.info("Saving gamma compressed into a file")
                 pickle.dump(dict(self.gamma_compressed), f)
 
+            with open(self.cache_dir + "tf_table", "wb") as f:
+                logger.info("Saving tf_table into a file")
+                pickle.dump(self.tf_table[0], f)
+
+            with open(self.cache_dir + "all_terms", "wb") as f:
+                logger.info("Saving all_terms into a file")
+                pickle.dump(self.tf_table[1], f)
 
         else:
             with open(self.cache_dir + "vocab_frequency", "rb") as f:
@@ -118,10 +123,6 @@ class SearchEngine:
                 logger.info("Loading bigram_index from file")
                 self.bigram_index = pickle.load(f)
 
-            with open(self.cache_dir + "tfdf", "rb") as f:
-                logger.info("Loading tfdf from file")
-                self.tfdf = pickle.load(f)
-
             with open(self.cache_dir + "variable_length_compressed", "rb") as f:
                 logger.info("Loading variable length compressed postings from file")
                 self.variable_length_compressed = pickle.load(f)
@@ -129,6 +130,11 @@ class SearchEngine:
             with open(self.cache_dir + "gamma_compressed", "rb") as f:
                 logger.info("Loading gamma compressed postings from file")
                 self.variable_length_compressed = pickle.load(f)
+
+            with open(self.cache_dir + "tf_table", "rb") as f:
+                with open(self.cache_dir + "all_terms", "rb") as g:
+                    logger.info("Loading tf_table and all_terms into a file")
+                    self.tf_table = pickle.load(f), pickle.load(g)
 
         posting_size = get_size_dict_of_list(self.postings)
         variable_length_compressed_size = get_size_dict_of_list(self.variable_length_compressed)
@@ -171,7 +177,7 @@ class SearchEngine:
                 if len(self.postings[word]) == 0:
                     self.postings[word].append(i + 1)
                     self.positional_index[word].append([j])
-                elif self.postings[word][-1] != i:
+                elif self.postings[word][-1] != i + 1:
                     self.postings[word].append(i + 1)
                     self.positional_index[word].append([j])
                 else:
@@ -180,6 +186,36 @@ class SearchEngine:
                 bigrams = extract_bigrams(word)
                 for bigram in bigrams:
                     self.bigram_index[bigram].add(word)
+
+    def query_lnc_ltc(self, query):
+        query_terms = self.query_spell_correction(query)
+        score = np.zeros(shape=(self.n_documents,))
+
+        # scoring
+        for query_term in set(query_terms):
+            query_tf = 1 + np.log(query_terms.count(query_term))
+            query_idf = np.log(self.n_documents / len(self.postings[query_term]))
+            query_weight = query_tf * query_idf
+            for doc_id in self.postings[query_term]:
+                score[doc_id - 1] += self.tf_table[0][doc_id - 1, self.tf_table[1].index(query_term)] * query_weight
+
+        # normalization
+        for doc_id in range(self.n_documents):
+            score[doc_id] /= np.linalg.norm(self.tf_table[0][ - 1,:])
+
+        id_score = [(doc_id, score[doc_id]) for doc_id in range(self.n_documents)]
+        sorted_id_score = sorted(id_score, key=lambda x: x[1], reverse=True)
+        return sorted_id_score
+
+    def build_tf(self):
+        logger.info("Building tf table...")
+        all_terms = list(self.postings.keys())
+        tf = np.zeros(shape=(self.n_documents, len(all_terms)))
+        for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
+            for word in doc_words:
+                in_posting_idx = self.postings[word].index(i + 1)
+                tf[i, all_terms.index(word)] = len(self.positional_index[word][in_posting_idx])
+        return tf, all_terms
 
     def variable_length_compression(self):
         for word, posting in self.postings.items():
