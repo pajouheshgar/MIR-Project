@@ -191,7 +191,6 @@ class SearchEngine:
         for word, posting in self.postings.items():
             last = 0
             for id in posting:
-                print(type(number_to_variable_length(id - last)[0]))
                 self.variable_length_compressed[word] += number_to_variable_length(id - last)
                 last = id
 
@@ -201,6 +200,29 @@ class SearchEngine:
             for id in posting:
                 self.gamma_compressed[word] += number_to_gamma(id - last)
                 last = id
+
+    def select_jaccard(self, vocab, top_k):
+
+        def count(bigram):
+            return bigram, sum([bigram in bigram_vocab_list[i] for i in range(len(bigram_vocab_list))])
+
+        bigrams = extract_bigrams(vocab)
+        bigram_vocab_list = [list(self.bigram_index[bigram]) for bigram in bigrams if bigram in self.bigram_index]
+        all_candidates = set.union(*map(set, bigram_vocab_list))
+        word_count = list(map(count, all_candidates))
+        jaccard_sorted_word_count = sorted(word_count,
+                                           key=lambda x: float(x[1]) / (len(x[0]) - 1 + len(bigrams) - x[1]),
+                                           reverse=True)
+        return [word for word, _ in jaccard_sorted_word_count[:top_k]]
+
+    def query_spell_correction(self, vocab):
+        vocab = self.preprocessor.process_single_word(vocab)
+        if vocab in self.postings:
+            return vocab
+        else:
+            candidate_vocabs = self.select_jaccard(vocab, 20)
+            sorted_candidates = sorted(candidate_vocabs, key=lambda x: edit_distance(x, vocab), reverse=True)
+            return sorted_candidates[0]
 
     def gamma_decompress(self):
         postings = defaultdict(lambda: [])
