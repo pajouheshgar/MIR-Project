@@ -65,7 +65,6 @@ class SearchEngine:
             self.gamma_compressed = defaultdict(lambda: [])
             self.positional_index = defaultdict(lambda: [])
             self.bigram_index = defaultdict(lambda: set())
-            self.tfdf = defaultdict(lambda : [0, 0])
             self.build_index()
             self.variable_length_compression()
             self.gamma_compression()
@@ -169,17 +168,12 @@ class SearchEngine:
         logger.info("Building index from documents...")
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for j, word in enumerate(doc_words):
-                self.tfdf[word][0] += 1
                 if len(self.postings[word]) == 0:
                     self.postings[word].append(i + 1)
-                    self.positional_index[word].append([])
-                    self.positional_index[word][-1].append(j)
-                    self.tfdf[word][1] += 1
+                    self.positional_index[word].append([j])
                 elif self.postings[word][-1] != i:
                     self.postings[word].append(i + 1)
-                    self.positional_index[word].append([])
-                    self.positional_index[word][-1].append(j)
-                    self.tfdf[word][1] += 1
+                    self.positional_index[word].append([j])
                 else:
                     self.positional_index[word][-1].append(j)
 
