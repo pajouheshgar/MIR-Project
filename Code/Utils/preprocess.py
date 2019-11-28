@@ -9,7 +9,6 @@ from Code.Utils.clean_persian_text import PersianTextCleaner
 
 class PersianTextPreProcessor:
     def __init__(self):
-        self.persian_text_cleaner = PersianTextCleaner({})
         self.stemmer = Stemmer()
         self.normalizer = Normalizer()
 
@@ -47,7 +46,6 @@ class PersianTextPreProcessor:
 
 class EnglishTextPreProcessor:
     def __init__(self):
-        self.persian_text_cleaner = PersianTextCleaner({})
         self.stemmer = PorterStemmer()
 
     def process_single_word(self, word):

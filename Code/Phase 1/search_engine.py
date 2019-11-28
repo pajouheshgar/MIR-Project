@@ -63,7 +63,7 @@ class SearchEngine:
             self.postings = defaultdict(lambda: [])
             self.positional_index = defaultdict(lambda: [])
             self.bigram_index = defaultdict(lambda: set())
-            self.tfdf = defaultdict(lambda : [0, 0])
+            self.tfdf = defaultdict(lambda: [0, 0])  # Term frequency, document frequency
             self.build_index()
             with open(self.cache_dir + "postings", "wb") as f:
                 logger.info("Saving postings into a file")
@@ -173,12 +173,12 @@ class SearchEngine:
 
 
 if __name__ == '__main__':
-    # persian_text_preprocessor = PersianTextPreProcessor()
-    # dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
-    # search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, True)
-    #
-    # print(search_engine.get_vocab_posting('ایران'))
-    # print(search_engine.get_vocab_positions('ایران'))
+    persian_text_preprocessor = PersianTextPreProcessor()
+    dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
+    search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, True)
+
+    print(search_engine.get_vocab_posting('ایران'))
+    print(search_engine.get_vocab_positions('ایران'))
 
     english_text_preprocessor = EnglishTextPreProcessor()
     dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
