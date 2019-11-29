@@ -11,12 +11,13 @@ class PersianTextPreProcessor:
     def __init__(self):
         self.stemmer = Stemmer()
         self.normalizer = Normalizer()
+        self.punctuations = string.punctuation
 
     def process_single_word(self, word):
         word = word.lower()
         word = re.sub('\d+', '', word)
-        word = word.translate(str.maketrans('', '', string.punctuation))
-        word = ' '.join(re.sub(r'[^ضصثقفغعهخحجچشسیبلاتنمکگظطزرذدپوئژآؤ \n]', '', word).split())
+        word = word.translate(str.maketrans(self.punctuations, ' ' * len(self.punctuations)))
+        word = ' '.join(re.sub(r'[^ضصثقفغعهخحجچشسیبلاتنمکگظطزرذدپوئژآؤ \n]', ' ', word).split())
         word = word.strip()
         word = self.normalizer.normalize(word)
         word = self.stemmer.stem(word)
@@ -26,8 +27,8 @@ class PersianTextPreProcessor:
         # text = self.persian_text_cleaner.get_sentences(text)
         text = text.lower()
         text = re.sub('\d+', '', text)
-        text = text.translate(str.maketrans('', '', string.punctuation))
-        text = ' '.join(re.sub(r'[^ضصثقفغعهخحجچشسیبلاتنمکگظطزرذدپوئژآؤ \n]', '', text).split())
+        text = text.translate(str.maketrans(self.punctuations, ' ' * len(self.punctuations)))
+        text = ' '.join(re.sub(r'[^ضصثقفغعهخحجچشسیبلاتنمکگظطزرذدپوئژآؤ \n]', ' ', text).split())
         text = text.strip()
         normalized_text = self.normalizer.normalize(text)
         words = word_tokenize(normalized_text)
@@ -51,19 +52,23 @@ class PersianTextPreProcessor:
 class EnglishTextPreProcessor:
     def __init__(self):
         self.stemmer = PorterStemmer()
+        self.punctuations = string.punctuation
 
     def process_single_word(self, word):
         word = word.lower()
-        word = re.sub('\d+', '', word)
-        word = word.translate(str.maketrans('', '', string.punctuation))
+        word = re.sub('\d+', ' ', word)
+        # word = word.translate(str.maketrans(' ', ' ', string.punctuation))
+        word = word.translate(str.maketrans(self.punctuations, ' ' * len(self.punctuations)))
         word = word.strip()
         word = self.stemmer.stem(word)
         return word
 
     def pre_stopword_process(self, text):
         text = text.lower()
-        text = re.sub('\d+', '', text)
-        text = text.translate(str.maketrans('', '', string.punctuation))
+        text = re.sub('\d+', ' ', text)
+        # text = text.translate(str.maketrans(' ', ' ', string.punctuation))
+        text = text.translate(str.maketrans(self.punctuations, ' ' * len(self.punctuations)))
+
         text = text.strip()
         words = word_tokenize(text)
         return words

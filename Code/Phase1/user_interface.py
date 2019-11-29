@@ -8,7 +8,8 @@ class UI:
         self.se = search_engine
         self.level_one_details = "1- Preprocess\n2- Indexing\n" \
                                  "3- Compression\n4- Correction\n" \
-                                 "5- Retrieval\n6 - Exit"
+                                 "5- Retrieval\n6 - Remove Doc\n" \
+                                 "7- Add Doc\n8- Exit"
 
         self.level_two_one_details = "1- process input\n2- Show frequent words"
         self.level_two_two_details = "1- Show postings\n2- Show positions"
@@ -80,6 +81,15 @@ class UI:
             print(retrieved_documents)
 
         elif command == '6':
+            print("Enter doc_id to remove")
+            doc_id = int(input())
+            self.se.remove_doc(doc_id)
+        elif command == '7':
+            print("Enter document content")
+            text = input()
+            self.se.add_doc(text)
+
+        elif command == '8':
             exit()
         else:
             print(self.level_one_details)

@@ -29,6 +29,7 @@ class SearchEngine:
         self.titles = self.dataframe['Title']
         self.documents = self.dataframe['Text']
         self.n_documents = len(self.documents)
+        self.is_valid = [1] * self.n_documents
         self.document_words = []
         self.preprocessor = preprocessor
         self.cache_dir = Config.CACHE_DIR + name + "/"
@@ -185,10 +186,13 @@ class SearchEngine:
         logger.info("Building index from documents...")
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for j, word in enumerate(doc_words):
-                processed_word = self.preprocessor.clean_text(word, stopwords=self.stopwords)
-                if len(processed_word) == 0:
+                # processed_word = self.preprocessor.clean_text(word, stopwords=self.stopwords)
+                # if len(processed_word) == 0:
+                #     continue
+                # processed_word = processed_word[0]
+                if word in self.stopwords:
                     continue
-                processed_word = processed_word[0]
+                processed_word = self.preprocessor.stemmer.stem(word)
                 if len(self.postings[processed_word]) == 0:
                     self.postings[processed_word].append(i + 1)
                     self.positional_index[processed_word].append([j])
@@ -208,6 +212,7 @@ class SearchEngine:
     def query_lnc_ltc(self, query):
         query_terms = self.query_spell_correction(query)
         query_terms = self.preprocessor.stem(query_terms)
+        query_terms = [q for q in query_terms if q in self.postings]
         score = np.zeros(shape=(self.n_documents,))
 
         # scoring
@@ -220,9 +225,14 @@ class SearchEngine:
 
         # normalization
         for doc_id in range(self.n_documents):
-            score[doc_id] /= np.linalg.norm(self.tf_table[0][- 1, :])
+            norm = np.sum(self.tf_table[0][doc_id, :])
+            if norm > 0:
+                score[doc_id] /= norm
+            else:
+                score[doc_id] = 0
 
-        id_score = [(doc_id, score[doc_id]) for doc_id in range(self.n_documents)]
+        id_score = [(doc_id, score[doc_id]) for doc_id in range(self.n_documents) if score[doc_id] > 0]
+        id_score = [x for x in id_score if self.is_valid[x[0]]]
         sorted_id_score = sorted(id_score, key=lambda x: x[1], reverse=True)
         return sorted_id_score
 
@@ -234,10 +244,13 @@ class SearchEngine:
         tf = np.zeros(shape=(self.n_documents, len(all_terms)), dtype=np.int)
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for word in doc_words:
-                processed_word = self.preprocessor.clean_text(word, stopwords=self.stopwords)
-                if len(processed_word) == 0:
+                if word in self.stopwords:
                     continue
-                processed_word = processed_word[0]
+                processed_word = self.preprocessor.stemmer.stem(word)
+                # processed_word = self.preprocessor.clean_text(word, stopwords=self.stopwords)
+                # if len(processed_word) == 0:
+                #     continue
+                # processed_word = processed_word[0]
                 in_posting_idx = self.postings[processed_word].index(i + 1)
                 # tf[i, all_terms.index(word)] = len(self.positional_index[word][in_posting_idx])
                 tf[i, term_2_id[processed_word]] = len(self.positional_index[processed_word][in_posting_idx])
@@ -298,16 +311,26 @@ class SearchEngine:
     def get_vocab_posting(self, vocab):
         vocab = self.preprocessor.process_single_word(vocab)
         if vocab in self.postings:
-            return self.postings[vocab]
+            posting = [p for p in self.postings[vocab] if self.is_valid[p]]
+            return posting
         else:
             print("Vocab not found in the dictionary")
 
     def get_vocab_positions(self, vocab):
         vocab = self.preprocessor.process_single_word(vocab)
         if vocab in self.positional_index:
-            return self.positional_index[vocab]
+            positional_index = [y for x, y in zip(self.postings[vocab], self.positional_index[vocab]) if
+                                self.is_valid[x]]
+            return positional_index
         else:
             print("Vocab not found in the dictionary")
+
+    def remove_doc(self, doc_id):
+        self.is_valid[doc_id] = 0
+
+    def add_doc(self, text):
+        # TODO
+        pass
 
 
 if __name__ == '__main__':
