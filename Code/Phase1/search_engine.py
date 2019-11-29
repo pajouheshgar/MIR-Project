@@ -265,7 +265,7 @@ class SearchEngine:
         max_len = max([len(self.document_words[x]) for x in candidate_docs])
         valid_prox_docs = []
         for d in candidate_docs:
-            for i in range(max_len - window_size):
+            for i in range(max_len):
                 flag = True
                 for query_term in set(query_terms):
                     positional_index = self.positional_index[query_term][self.postings[query_term].index(d + 1)]
@@ -378,6 +378,7 @@ class SearchEngine:
     def add_doc(self, text):
         self.n_documents += 1
         doc_words = self.preprocessor.pre_stopword_process(text)
+        self.document_words.append(doc_words)
         new_terms = []
         for j, word in enumerate(doc_words):
             if word in self.stopwords:

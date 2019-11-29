@@ -85,6 +85,7 @@ class UI:
                     retrieved_documents = self.se.query_lnc_ltc(query)
                     print("Retrieved documents by rank:")
                     print(retrieved_documents)
+                    flag = True
 
                 elif c == '2':
                     print("Enter your query:")
@@ -94,6 +95,8 @@ class UI:
                     retrieved_documents = self.se.query_lnc_ltc_proximity(query, window_size)
                     print("Retrieved documents by rank:")
                     print(retrieved_documents)
+                    flag = True
+
                 else:
                     print("Invalid Command")
 
