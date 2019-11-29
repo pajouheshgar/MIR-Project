@@ -60,6 +60,7 @@ class SearchEngine:
                 logger.info("Saving document_words into a file")
                 pickle.dump(self.document_words, f)
 
+            self.without_stem_dictionary = set()
             self.postings = defaultdict(lambda: [])
             self.variable_length_compressed = defaultdict(lambda: [])
             self.gamma_compressed = defaultdict(lambda: [])
@@ -99,6 +100,10 @@ class SearchEngine:
                 logger.info("Saving all_terms into a file")
                 pickle.dump(self.tf_table[1], f)
 
+            with open(self.cache_dir + "without_stem_dict", "wb") as f:
+                logger.info("Saving without stem dictionary into a file")
+                pickle.dump(self.without_stem_dictionary, f)
+
         else:
             with open(self.cache_dir + "vocab_frequency", "rb") as f:
                 logger.info("Loading vocab_frequency from file")
@@ -136,6 +141,10 @@ class SearchEngine:
                 with open(self.cache_dir + "all_terms", "rb") as g:
                     logger.info("Loading tf_table and all_terms into a file")
                     self.tf_table = pickle.load(f), pickle.load(g)
+
+            with open(self.cache_dir + "without_stem_dict", "rb") as f:
+                logger.info("Loading without stem dictionary into a file")
+                self.without_stem_dictionary = pickle.load(f)
 
         self.posting_size = get_size_dict_of_list(self.postings)
         self.variable_length_compressed_size = get_size_dict_of_list(self.variable_length_compressed)
@@ -176,22 +185,29 @@ class SearchEngine:
         logger.info("Building index from documents...")
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for j, word in enumerate(doc_words):
-                if len(self.postings[word]) == 0:
-                    self.postings[word].append(i + 1)
-                    self.positional_index[word].append([j])
-                elif self.postings[word][-1] != i + 1:
-                    self.postings[word].append(i + 1)
-                    self.positional_index[word].append([j])
+                processed_word = self.preprocessor.clean_text(word, stopwords=self.stopwords)
+                if len(processed_word) == 0:
+                    continue
+                processed_word = processed_word[0]
+                if len(self.postings[processed_word]) == 0:
+                    self.postings[processed_word].append(i + 1)
+                    self.positional_index[processed_word].append([j])
+                elif self.postings[processed_word][-1] != i + 1:
+                    self.postings[processed_word].append(i + 1)
+                    self.positional_index[processed_word].append([j])
                 else:
-                    self.positional_index[word][-1].append(j)
+                    self.positional_index[processed_word][-1].append(j)
 
-                bigrams = extract_bigrams(word)
+                processed_word_without_stem = self.preprocessor.clean_text(word, stopwords=self.stopwords,
+                                                                           stem=False)[0]
+                self.without_stem_dictionary.add(processed_word_without_stem)
+                bigrams = extract_bigrams(processed_word_without_stem)
                 for bigram in bigrams:
-                    self.bigram_index[bigram].add(word)
+                    self.bigram_index[bigram].add(processed_word_without_stem)
 
     def query_lnc_ltc(self, query):
         query_terms = self.query_spell_correction(query)
-        query_terms = self.preprocessor.remove_stop_words_and_stem(query_terms)
+        query_terms = self.preprocessor.stem(query_terms)
         score = np.zeros(shape=(self.n_documents,))
 
         # scoring
@@ -217,8 +233,12 @@ class SearchEngine:
         tf = np.zeros(shape=(self.n_documents, len(all_terms)))
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for word in doc_words:
-                in_posting_idx = self.postings[word].index(i + 1)
-                tf[i, all_terms.index(word)] = len(self.positional_index[word][in_posting_idx])
+                processed_word = self.preprocessor.clean_text(word, stopwords=self.stopwords)
+                if len(processed_word) == 0:
+                    continue
+                processed_word = processed_word[0]
+                in_posting_idx = self.postings[processed_word].index(i + 1)
+                tf[i, all_terms.index(processed_word)] = len(self.positional_index[processed_word][in_posting_idx])
         return tf, all_terms
 
     def variable_length_compression(self):
@@ -253,11 +273,11 @@ class SearchEngine:
         query_terms = self.preprocessor.clean_text(query, self.stopwords, stem=False)
         corrected_query_terms = []
         for query_term in query_terms:
-            if query_term in self.postings:
+            if query_term in self.without_stem_dictionary:
                 corrected_query_terms.append(query_term)
             else:
-                candidate_vocabs = self.select_jaccard(query_term, 20)
-                sorted_candidates = sorted(candidate_vocabs, key=lambda x: edit_distance(x, query_term), reverse=True)
+                candidate_vocabs = self.select_jaccard(query_term, 5)
+                sorted_candidates = sorted(candidate_vocabs, key=lambda x: edit_distance(x, query_term))
                 corrected_query_terms.append(sorted_candidates[0])
         return corrected_query_terms
 
