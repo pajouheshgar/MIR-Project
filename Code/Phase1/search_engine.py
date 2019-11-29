@@ -254,7 +254,6 @@ class SearchEngine:
                 score[doc_id - 1] += self.tf_table[0][doc_id - 1, self.tf_table[1].index(query_term)] * query_weight
 
         candidate_docs = np.where(candidate_docs == len(set(query_terms)))[0].tolist()
-        print(candidate_docs)
         # normalization
         for doc_id in range(self.n_documents):
             norm = np.sum(self.tf_table[0][doc_id, :])
@@ -267,7 +266,24 @@ class SearchEngine:
         id_score = [x for x in id_score if self.is_valid[x[0]] and x[0] in candidate_docs]
 
         # now we should filter the documents based on proximity
+        max_len = max([len(self.document_words[x]) for x in candidate_docs])
+        valid_prox_docs = []
+        for d in candidate_docs:
+            for i in range(max_len - window_size):
+                flag = True
+                for query_term in set(query_terms):
+                    positional_index = self.positional_index[query_term][self.postings[query_term].index(d + 1)]
+                    flag2 = False
+                    for j in range(i, i + window_size):
+                        if j in positional_index:
+                            flag2 = True
+                    if not flag2:
+                        flag = False
+                        continue
+                if flag:
+                    valid_prox_docs.append(d)
 
+        id_score = [x for x in id_score if x[0] in valid_prox_docs]
         sorted_id_score = sorted(id_score, key=lambda x: x[1], reverse=True)
         return sorted_id_score
 
