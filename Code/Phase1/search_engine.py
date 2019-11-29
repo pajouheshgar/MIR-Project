@@ -16,8 +16,8 @@ logger = logging.getLogger("Search Engine")
 
 class Config:
     DATA_DIR = "Data/"
-    PERSIAN_DATA_DIR = DATA_DIR + "Phase 1/Persian.csv"
-    ENGLISH_DATA_DIR = DATA_DIR + "Phase 1/English.csv"
+    PERSIAN_DATA_DIR = DATA_DIR + "Phase1/Persian.csv"
+    ENGLISH_DATA_DIR = DATA_DIR + "Phase1/English.csv"
     CACHE_DIR = DATA_DIR + "/Cache/"
 
 
@@ -130,20 +130,21 @@ class SearchEngine:
 
             with open(self.cache_dir + "gamma_compressed", "rb") as f:
                 logger.info("Loading gamma compressed postings from file")
-                self.variable_length_compressed = pickle.load(f)
+                self.gamma_compressed = pickle.load(f)
 
             with open(self.cache_dir + "tf_table", "rb") as f:
                 with open(self.cache_dir + "all_terms", "rb") as g:
                     logger.info("Loading tf_table and all_terms into a file")
                     self.tf_table = pickle.load(f), pickle.load(g)
 
-        posting_size = get_size_dict_of_list(self.postings)
-        variable_length_compressed_size = get_size_dict_of_list(self.variable_length_compressed)
-        gamma_compressed_size = get_size_dict_of_list(self.gamma_compressed)
+        self.posting_size = get_size_dict_of_list(self.postings)
+        self.variable_length_compressed_size = get_size_dict_of_list(self.variable_length_compressed)
+        self.gamma_compressed_size = get_size_dict_of_list(self.gamma_compressed)
 
-        logger.info("Size of postings before compression {}".format(posting_size))
-        logger.info("Size of postings after variable-length compression {}".format(variable_length_compressed_size))
-        logger.info("Size of postings after gamma compression {}".format(gamma_compressed_size))
+        logger.info("Size of postings before compression {}".format(self.posting_size))
+        logger.info(
+            "Size of postings after variable-length compression {}".format(self.variable_length_compressed_size))
+        logger.info("Size of postings after gamma compression {}".format(self.gamma_compressed_size))
 
     def infer_stopwords(self):
         logger.info("Inferring stopwords from documents")
@@ -202,7 +203,7 @@ class SearchEngine:
 
         # normalization
         for doc_id in range(self.n_documents):
-            score[doc_id] /= np.linalg.norm(self.tf_table[0][ - 1,:])
+            score[doc_id] /= np.linalg.norm(self.tf_table[0][- 1, :])
 
         id_score = [(doc_id, score[doc_id]) for doc_id in range(self.n_documents)]
         sorted_id_score = sorted(id_score, key=lambda x: x[1], reverse=True)
@@ -210,7 +211,9 @@ class SearchEngine:
 
     def build_tf(self):
         logger.info("Building tf table...")
+
         all_terms = list(self.postings.keys())
+        print(len(all_terms))
         tf = np.zeros(shape=(self.n_documents, len(all_terms)))
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for word in doc_words:
@@ -300,4 +303,3 @@ if __name__ == '__main__':
     print(search_engine.get_vocab_posting('News'))
     print(search_engine.get_vocab_positions('News'))
     print(search_engine.query_lnc_ltc())
-
