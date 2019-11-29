@@ -43,10 +43,10 @@ class SearchEngine:
             logger.info("Inferred stopwords are: {}".format(self.stopwords))
             self.print_most_repeated_words(50)
 
-            self.document_words = list(
-                map(lambda words: self.preprocessor.remove_stop_words_and_stem(words, self.stopwords),
-                    self.document_words)
-            )
+            # self.document_words = list(
+            #     map(lambda words: self.preprocessor.remove_stop_words_and_stem(words, self.stopwords, False),
+            #         self.document_words)
+            # )
 
             with open(self.cache_dir + "vocab_frequency", "wb") as f:
                 logger.info("Saving vocab_frequency into a file")
@@ -286,12 +286,12 @@ class SearchEngine:
 
 
 if __name__ == '__main__':
-    persian_text_preprocessor = PersianTextPreProcessor()
-    dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
-    search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, True)
-
-    print(search_engine.get_vocab_posting('ایران'))
-    print(search_engine.get_vocab_positions('ایران'))
+    # persian_text_preprocessor = PersianTextPreProcessor()
+    # dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
+    # search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, True)
+    #
+    # print(search_engine.get_vocab_posting('ایران'))
+    # print(search_engine.get_vocab_positions('ایران'))
 
     english_text_preprocessor = EnglishTextPreProcessor()
     dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
@@ -299,3 +299,5 @@ if __name__ == '__main__':
 
     print(search_engine.get_vocab_posting('News'))
     print(search_engine.get_vocab_positions('News'))
+    print(search_engine.query_lnc_ltc())
+

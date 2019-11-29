@@ -1,11 +1,13 @@
 import numpy as np
 
+
 def extract_bigrams(word):
     bigrams = []
     for i, c in enumerate(word[:-1]):
         bigrams.append('{}{}'.format(c, word[i + 1]))
 
     return bigrams
+
 
 def number_to_gamma(gap):
     res = []
@@ -18,6 +20,7 @@ def number_to_gamma(gap):
     res += [np.bool(1) for _ in range(n)]
     res.reverse()
     return res
+
 
 def gamma_to_posting(gamma):
     on_length = True
@@ -45,6 +48,7 @@ def gamma_to_posting(gamma):
                 on_length = True
     return posting[1:]
 
+
 def number_to_variable_length(gap):
     res = []
 
@@ -64,6 +68,7 @@ def number_to_variable_length(gap):
     res.reverse()
     return res
 
+
 def variable_length_to_posting(variable_length):
     num = 0
     posting = [0]
@@ -77,12 +82,14 @@ def variable_length_to_posting(variable_length):
             num += byte
     return posting[1:]
 
+
 def get_size_dict_of_list(dictionary):
     size = 0
-    size_map = {np.bool: 1./8., np.uint8: 1, int: 8}
+    size_map = {np.bool: 1. / 8., np.uint8: 1, int: 8}
     for key, value in dictionary.items():
         size += len(value) * size_map[type(value[0])]
     return int(np.ceil(size))
+
 
 def edit_distance(str1, str2):
     n1 = len(str1)
