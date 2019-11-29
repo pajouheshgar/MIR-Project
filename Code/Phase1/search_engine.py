@@ -234,16 +234,13 @@ class SearchEngine:
         tf = np.zeros(shape=(self.n_documents, len(all_terms)), dtype=np.int)
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for word in doc_words:
-                in_posting_idx = self.postings[word].index(i + 1)
-                # tf[i, all_terms.index(word)] = len(self.positional_index[word][in_posting_idx])
-                tf[i, term_2_id[word]] = len(self.positional_index[word][in_posting_idx])
-
                 processed_word = self.preprocessor.clean_text(word, stopwords=self.stopwords)
                 if len(processed_word) == 0:
                     continue
                 processed_word = processed_word[0]
                 in_posting_idx = self.postings[processed_word].index(i + 1)
-                tf[i, all_terms.index(processed_word)] = len(self.positional_index[processed_word][in_posting_idx])
+                # tf[i, all_terms.index(word)] = len(self.positional_index[word][in_posting_idx])
+                tf[i, term_2_id[processed_word]] = len(self.positional_index[processed_word][in_posting_idx])
         return tf, all_terms
 
     def variable_length_compression(self):
