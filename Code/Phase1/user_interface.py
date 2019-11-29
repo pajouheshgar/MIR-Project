@@ -13,6 +13,7 @@ class UI:
 
         self.level_two_one_details = "1- process input\n2- Show frequent words"
         self.level_two_two_details = "1- Show postings\n2- Show positions"
+        self.level_two_five_details = "1- Normal search\n2- Proximity search"
 
     def run_level_one(self, command):
         if command == '1':
@@ -74,11 +75,29 @@ class UI:
             print(corrected_query)
 
         elif command == '5':
-            print("Enter your query:")
-            query = input()
-            retrieved_documents = self.se.query_lnc_ltc(query)
-            print("Retrieved documents by rank:")
-            print(retrieved_documents)
+            flag = False
+            while not flag:
+                print(self.level_two_five_details)
+                c = input()
+                if c == '1':
+                    print("Enter your query:")
+                    query = input()
+                    retrieved_documents = self.se.query_lnc_ltc(query)
+                    print("Retrieved documents by rank:")
+                    print(retrieved_documents)
+
+                elif c == '2':
+                    print("Enter your query:")
+                    query = input()
+                    print("Enter window size:")
+                    window_size = int(input())
+                    retrieved_documents = self.se.query_lnc_ltc_proximity(query, window_size)
+                    print("Retrieved documents by rank:")
+                    print(retrieved_documents)
+                else:
+                    print("Invalid Command")
+
+
 
         elif command == '6':
             print("Enter doc_id to remove")
@@ -102,13 +121,13 @@ class UI:
 
 
 if __name__ == '__main__':
-    # english_text_preprocessor = EnglishTextPreProcessor()
-    # dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
-    # search_engine = SearchEngine('English', dataframe, english_text_preprocessor, True)
-
-    persian_text_preprocessor = PersianTextPreProcessor()
-    dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
-    search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, False)
+    english_text_preprocessor = EnglishTextPreProcessor()
+    dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
+    search_engine = SearchEngine('English', dataframe, english_text_preprocessor, False)
+    #
+    # persian_text_preprocessor = PersianTextPreProcessor()
+    # dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
+    # search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, False)
 
     ui = UI(search_engine)
     ui.start()

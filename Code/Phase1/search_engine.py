@@ -236,6 +236,41 @@ class SearchEngine:
         sorted_id_score = sorted(id_score, key=lambda x: x[1], reverse=True)
         return sorted_id_score
 
+    def query_lnc_ltc_proximity(self, query, window_size=5):
+        query_terms = self.query_spell_correction(query)
+        query_terms = self.preprocessor.stem(query_terms)
+        query_terms = [q for q in query_terms if q in self.postings]
+        score = np.zeros(shape=(self.n_documents,))
+        candidate_docs = np.zeros(shape=(self.n_documents))
+
+        # scoring
+        for query_term in set(query_terms):
+            query_tf = 1 + np.log(query_terms.count(query_term))
+            query_idf = np.log(self.n_documents / len(self.postings[query_term]))
+            query_weight = query_tf * query_idf
+
+            for doc_id in self.postings[query_term]:
+                candidate_docs[doc_id - 1] += 1
+                score[doc_id - 1] += self.tf_table[0][doc_id - 1, self.tf_table[1].index(query_term)] * query_weight
+
+        candidate_docs = np.where(candidate_docs == len(set(query_terms)))[0].tolist()
+        print(candidate_docs)
+        # normalization
+        for doc_id in range(self.n_documents):
+            norm = np.sum(self.tf_table[0][doc_id, :])
+            if norm > 0:
+                score[doc_id] /= norm
+            else:
+                score[doc_id] = 0
+
+        id_score = [(doc_id, score[doc_id]) for doc_id in range(self.n_documents) if score[doc_id] > 0]
+        id_score = [x for x in id_score if self.is_valid[x[0]] and x[0] in candidate_docs]
+
+        # now we should filter the documents based on proximity
+
+        sorted_id_score = sorted(id_score, key=lambda x: x[1], reverse=True)
+        return sorted_id_score
+
     def build_tf(self):
         logger.info("Building tf table...")
 
@@ -311,7 +346,7 @@ class SearchEngine:
     def get_vocab_posting(self, vocab):
         vocab = self.preprocessor.process_single_word(vocab)
         if vocab in self.postings:
-            posting = [p for p in self.postings[vocab] if self.is_valid[p]]
+            posting = [p - 1 for p in self.postings[vocab] if self.is_valid[p - 1]]
             return posting
         else:
             print("Vocab not found in the dictionary")
@@ -320,7 +355,7 @@ class SearchEngine:
         vocab = self.preprocessor.process_single_word(vocab)
         if vocab in self.positional_index:
             positional_index = [y for x, y in zip(self.postings[vocab], self.positional_index[vocab]) if
-                                self.is_valid[x]]
+                                self.is_valid[x - 1]]
             return positional_index
         else:
             print("Vocab not found in the dictionary")
