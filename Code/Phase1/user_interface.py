@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
     persian_text_preprocessor = PersianTextPreProcessor()
     dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
-    search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, True)
+    search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, False)
 
     ui = UI(search_engine)
     ui.start()

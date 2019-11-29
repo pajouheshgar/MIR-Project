@@ -214,11 +214,13 @@ class SearchEngine:
         logger.info("Building tf table...")
 
         all_terms = list(self.postings.keys())
-        tf = np.zeros(shape=(self.n_documents, len(all_terms)))
+        term_2_id = {t: i for i, t in enumerate(all_terms)}
+        tf = np.zeros(shape=(self.n_documents, len(all_terms)), dtype=np.int)
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for word in doc_words:
                 in_posting_idx = self.postings[word].index(i + 1)
-                tf[i, all_terms.index(word)] = len(self.positional_index[word][in_posting_idx])
+                # tf[i, all_terms.index(word)] = len(self.positional_index[word][in_posting_idx])
+                tf[i, term_2_id[word]] = len(self.positional_index[word][in_posting_idx])
         return tf, all_terms
 
     def variable_length_compression(self):
@@ -289,17 +291,17 @@ class SearchEngine:
 
 
 if __name__ == '__main__':
-    # persian_text_preprocessor = PersianTextPreProcessor()
-    # dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
-    # search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, True)
+    persian_text_preprocessor = PersianTextPreProcessor()
+    dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
+    search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, False)
+
+    print(search_engine.get_vocab_posting('ایران'))
+    print(search_engine.get_vocab_positions('ایران'))
+
+    # english_text_preprocessor = EnglishTextPreProcessor()
+    # dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
+    # search_engine = SearchEngine('English', dataframe, english_text_preprocessor, True)
     #
-    # print(search_engine.get_vocab_posting('ایران'))
-    # print(search_engine.get_vocab_positions('ایران'))
-
-    english_text_preprocessor = EnglishTextPreProcessor()
-    dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
-    search_engine = SearchEngine('English', dataframe, english_text_preprocessor, True)
-
-    print(search_engine.get_vocab_posting('News'))
-    print(search_engine.get_vocab_positions('News'))
-    print(search_engine.query_lnc_ltc())
+    # print(search_engine.get_vocab_posting('News'))
+    # print(search_engine.get_vocab_positions('News'))
+    # print(search_engine.query_lnc_ltc())
