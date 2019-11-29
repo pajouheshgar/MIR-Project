@@ -43,11 +43,8 @@ class PersianTextPreProcessor:
             words = [self.stemmer.stem(w) for w in words]
         return words
 
-    def remove_stop_words_and_stem(self, words, stopwords, remove_stopwords=True, stem=True):
-        if remove_stopwords:
-            words = [w for w in words if w not in stopwords]
-        if stem:
-            words = [self.stemmer.stem(w) for w in words]
+    def stem(self, words):
+        words = [self.stemmer.stem(w) for w in words]
         return words
 
 
@@ -75,12 +72,10 @@ class EnglishTextPreProcessor:
         words = self.pre_stopword_process(text)
         if remove_stopwords:
             words = [w for w in words if w not in stopwords]
-        words = [self.stemmer.stem(w) for w in words]
-        return words
-
-    def remove_stop_words_and_stem(self, words, stopwords, remove_stopwords=True, stem=True):
-        if remove_stopwords:
-            words = [w for w in words if w not in stopwords]
         if stem:
             words = [self.stemmer.stem(w) for w in words]
+        return words
+
+    def stem(self, words):
+        words = [self.stemmer.stem(w) for w in words]
         return words
