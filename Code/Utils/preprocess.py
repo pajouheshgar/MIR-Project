@@ -34,18 +34,20 @@ class PersianTextPreProcessor:
         words = [w for w in words if w != '.']
         return words
 
-    def clean_text(self, text, stopwords, remove_stopwords=True):
+    def clean_text(self, text, stopwords, remove_stopwords=True, stem=True):
         words = self.pre_stopword_process(text)
         if remove_stopwords:
             words = [w for w in words if w not in stopwords]
 
-        words = [self.stemmer.stem(w) for w in words]
+        if stem:
+            words = [self.stemmer.stem(w) for w in words]
         return words
 
-    def remove_stop_words_and_stem(self, words, stopwords, remove_stopwords=True):
+    def remove_stop_words_and_stem(self, words, stopwords, remove_stopwords=True, stem=True):
         if remove_stopwords:
             words = [w for w in words if w not in stopwords]
-        words = [self.stemmer.stem(w) for w in words]
+        if stem:
+            words = [self.stemmer.stem(w) for w in words]
         return words
 
 
@@ -69,15 +71,16 @@ class EnglishTextPreProcessor:
         words = word_tokenize(text)
         return words
 
-    def clean_text(self, text, stopwords, remove_stopwords=True):
+    def clean_text(self, text, stopwords, remove_stopwords=True, stem=True):
         words = self.pre_stopword_process(text)
         if remove_stopwords:
             words = [w for w in words if w not in stopwords]
         words = [self.stemmer.stem(w) for w in words]
         return words
 
-    def remove_stop_words_and_stem(self, words, stopwords, remove_stopwords=True):
+    def remove_stop_words_and_stem(self, words, stopwords, remove_stopwords=True, stem=True):
         if remove_stopwords:
             words = [w for w in words if w not in stopwords]
-        words = [self.stemmer.stem(w) for w in words]
+        if stem:
+            words = [self.stemmer.stem(w) for w in words]
         return words

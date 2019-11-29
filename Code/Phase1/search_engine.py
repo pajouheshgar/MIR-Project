@@ -191,6 +191,7 @@ class SearchEngine:
 
     def query_lnc_ltc(self, query):
         query_terms = self.query_spell_correction(query)
+        query_terms = self.preprocessor.remove_stop_words_and_stem(query_terms)
         score = np.zeros(shape=(self.n_documents,))
 
         # scoring
@@ -213,7 +214,6 @@ class SearchEngine:
         logger.info("Building tf table...")
 
         all_terms = list(self.postings.keys())
-        print(len(all_terms))
         tf = np.zeros(shape=(self.n_documents, len(all_terms)))
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for word in doc_words:
@@ -250,7 +250,7 @@ class SearchEngine:
         return [word for word, _ in jaccard_sorted_word_count[:top_k]]
 
     def query_spell_correction(self, query):
-        query_terms = self.preprocessor.clean_text(query, self.stopwords)
+        query_terms = self.preprocessor.clean_text(query, self.stopwords, stem=False)
         corrected_query_terms = []
         for query_term in query_terms:
             if query_term in self.postings:
