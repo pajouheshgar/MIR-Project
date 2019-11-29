@@ -123,7 +123,7 @@ class UI:
 if __name__ == '__main__':
     english_text_preprocessor = EnglishTextPreProcessor()
     dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
-    search_engine = SearchEngine('English', dataframe, english_text_preprocessor, False)
+    search_engine = SearchEngine('English', dataframe, english_text_preprocessor, True)
     #
     # persian_text_preprocessor = PersianTextPreProcessor()
     # dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)

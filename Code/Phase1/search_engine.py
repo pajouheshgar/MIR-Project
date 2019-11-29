@@ -186,10 +186,6 @@ class SearchEngine:
         logger.info("Building index from documents...")
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
             for j, word in enumerate(doc_words):
-                # processed_word = self.preprocessor.clean_text(word, stopwords=self.stopwords)
-                # if len(processed_word) == 0:
-                #     continue
-                # processed_word = processed_word[0]
                 if word in self.stopwords:
                     continue
                 processed_word = self.preprocessor.stemmer.stem(word)
@@ -202,12 +198,12 @@ class SearchEngine:
                 else:
                     self.positional_index[processed_word][-1].append(j)
 
-                processed_word_without_stem = self.preprocessor.clean_text(word, stopwords=self.stopwords,
-                                                                           stem=False)[0]
-                self.without_stem_dictionary.add(processed_word_without_stem)
-                bigrams = extract_bigrams(processed_word_without_stem)
+                # processed_word_without_stem = self.preprocessor.clean_text(word, stopwords=self.stopwords,
+                #                                                            stem=False)[0]
+                self.without_stem_dictionary.add(word)
+                bigrams = extract_bigrams(word)
                 for bigram in bigrams:
-                    self.bigram_index[bigram].add(processed_word_without_stem)
+                    self.bigram_index[bigram].add(word)
 
     def query_lnc_ltc(self, query):
         query_terms = self.query_spell_correction(query)
@@ -364,8 +360,53 @@ class SearchEngine:
         self.is_valid[doc_id] = 0
 
     def add_doc(self, text):
-        # TODO
-        pass
+        self.n_documents += 1
+        print(self.n_documents)
+        doc_words = self.preprocessor.pre_stopword_process(text)
+        print(doc_words)
+        new_terms = []
+        for j, word in enumerate(doc_words):
+            if word in self.stopwords:
+                continue
+            print("Not stop word")
+            stemmed_word = self.preprocessor.stemmer.stem(word)
+            print(stemmed_word)
+            if len(self.postings[stemmed_word]) == 0:
+                self.postings[stemmed_word].append(self.n_documents)
+                self.positional_index[stemmed_word].append([j])
+                new_terms.append(stemmed_word)
+            elif self.postings[stemmed_word][-1] != self.n_documents:
+                print("Add new doc")
+                self.postings[stemmed_word].append(self.n_documents)
+                self.positional_index[stemmed_word].append([j])
+                new_terms.append(stemmed_word)
+            else:
+                self.positional_index[stemmed_word][-1].append(j)
+
+            self.without_stem_dictionary.add(word)
+            bigrams = extract_bigrams(word)
+            for bigram in bigrams:
+                self.bigram_index[bigram].add(word)
+
+        column_extended_table = np.concatenate((self.tf_table[0],
+                                                np.zeros(shape=(self.n_documents - 1, len(new_terms)))), axis=1)
+        new_all_terms = self.tf_table[1] + new_terms
+        new_table = np.concatenate((column_extended_table, np.zeros(shape=(1,len(new_all_terms)))), axis=0)
+
+        print(new_table.shape)
+        term_2_id = {t: i for i, t in enumerate(new_all_terms)}
+        for word in doc_words:
+            if word in self.stopwords:
+                continue
+            print("here!")
+            processed_word = self.preprocessor.stemmer.stem(word)
+            in_posting_idx = self.postings[processed_word].index(self.n_documents)
+            print(in_posting_idx)
+            new_table[self.n_documents - 1, term_2_id[processed_word]] = len(self.positional_index[processed_word][in_posting_idx])
+            print(self.positional_index[processed_word][in_posting_idx])
+            processed_word
+        self.tf_table = new_table, new_all_terms
+        self.is_valid += [1]
 
 
 if __name__ == '__main__':
