@@ -377,25 +377,19 @@ class SearchEngine:
 
     def add_doc(self, text):
         self.n_documents += 1
-        print(self.n_documents)
         doc_words = self.preprocessor.pre_stopword_process(text)
-        print(doc_words)
         new_terms = []
         for j, word in enumerate(doc_words):
             if word in self.stopwords:
                 continue
-            print("Not stop word")
             stemmed_word = self.preprocessor.stemmer.stem(word)
-            print(stemmed_word)
             if len(self.postings[stemmed_word]) == 0:
                 self.postings[stemmed_word].append(self.n_documents)
                 self.positional_index[stemmed_word].append([j])
                 new_terms.append(stemmed_word)
             elif self.postings[stemmed_word][-1] != self.n_documents:
-                print("Add new doc")
                 self.postings[stemmed_word].append(self.n_documents)
                 self.positional_index[stemmed_word].append([j])
-                new_terms.append(stemmed_word)
             else:
                 self.positional_index[stemmed_word][-1].append(j)
 
@@ -409,18 +403,13 @@ class SearchEngine:
         new_all_terms = self.tf_table[1] + new_terms
         new_table = np.concatenate((column_extended_table, np.zeros(shape=(1,len(new_all_terms)))), axis=0)
 
-        print(new_table.shape)
         term_2_id = {t: i for i, t in enumerate(new_all_terms)}
         for word in doc_words:
             if word in self.stopwords:
                 continue
-            print("here!")
             processed_word = self.preprocessor.stemmer.stem(word)
             in_posting_idx = self.postings[processed_word].index(self.n_documents)
-            print(in_posting_idx)
             new_table[self.n_documents - 1, term_2_id[processed_word]] = len(self.positional_index[processed_word][in_posting_idx])
-            print(self.positional_index[processed_word][in_posting_idx])
-            processed_word
         self.tf_table = new_table, new_all_terms
         self.is_valid += [1]
 
