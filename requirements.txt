@@ -1,6 +1,6 @@
 scikit-learn
 hazm==0.7.0
-nltk==3.3
+nltk==3.4.5
 numpy==1.17.4
 pandas==0.25.3
 python-dateutil==2.8.1
