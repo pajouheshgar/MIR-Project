@@ -57,3 +57,4 @@ if __name__ == '__main__':
 
     a = tfidf.get_tfidf_vector("hello usa italy said do done", False)
     print(a)
+
