@@ -73,6 +73,15 @@ class EnglishTextPreProcessor:
         words = word_tokenize(text)
         return words
 
+    def pre_stopword_text_cleaning(self, text):
+        text = text.lower()
+        text = re.sub('\d+', ' ', text)
+        # text = text.translate(str.maketrans(' ', ' ', string.punctuation))
+        text = text.translate(str.maketrans(self.punctuations, ' ' * len(self.punctuations)))
+
+        text = text.strip()
+        return text
+
     def clean_text(self, text, stopwords, remove_stopwords=True, stem=True):
         words = self.pre_stopword_process(text)
         if remove_stopwords:

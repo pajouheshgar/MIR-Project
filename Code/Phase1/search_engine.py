@@ -8,17 +8,11 @@ import pandas as pnd
 
 from Code.Utils.preprocess import PersianTextPreProcessor, EnglishTextPreProcessor
 from Code.Utils.utils import *
+from Code.Utils.Config import Config
 
 logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger("Search Engine")
-
-
-class Config:
-    DATA_DIR = "Data/"
-    PERSIAN_DATA_DIR = DATA_DIR + "Phase1/Persian.csv"
-    ENGLISH_DATA_DIR = DATA_DIR + "Phase1/English.csv"
-    CACHE_DIR = DATA_DIR + "/Cache/"
 
 
 class SearchEngine:
@@ -32,6 +26,7 @@ class SearchEngine:
         self.is_valid = [1] * self.n_documents
         self.document_words = []
         self.preprocessor = preprocessor
+
         self.cache_dir = Config.CACHE_DIR + name + "/"
         try:
             os.mkdir(self.cache_dir)
@@ -416,17 +411,17 @@ class SearchEngine:
 
 
 if __name__ == '__main__':
-    persian_text_preprocessor = PersianTextPreProcessor()
-    dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
-    search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, False)
-
-    print(search_engine.get_vocab_posting('ایران'))
-    print(search_engine.get_vocab_positions('ایران'))
-
-    # english_text_preprocessor = EnglishTextPreProcessor()
-    # dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
-    # search_engine = SearchEngine('English', dataframe, english_text_preprocessor, True)
+    # persian_text_preprocessor = PersianTextPreProcessor()
+    # dataframe = pnd.read_csv(Config.PERSIAN_DATA_DIR)
+    # search_engine = SearchEngine('Persian', dataframe, persian_text_preprocessor, False)
     #
-    # print(search_engine.get_vocab_posting('News'))
-    # print(search_engine.get_vocab_positions('News'))
+    # print(search_engine.get_vocab_posting('ایران'))
+    # print(search_engine.get_vocab_positions('ایران'))
+
+    english_text_preprocessor = EnglishTextPreProcessor()
+    dataframe = pnd.read_csv(Config.ENGLISH_DATA_DIR)
+    search_engine = SearchEngine('English', dataframe, english_text_preprocessor, True)
+
+    print(search_engine.get_vocab_posting('News'))
+    print(search_engine.get_vocab_positions('News'))
     # print(search_engine.query_lnc_ltc())
