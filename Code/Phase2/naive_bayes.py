@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-from tqdm import *
 import pandas as pnd
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
 
