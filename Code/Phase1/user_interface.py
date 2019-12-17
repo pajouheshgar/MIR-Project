@@ -14,6 +14,9 @@ class UI:
         self.level_two_one_details = "1- process input\n2- Show frequent words"
         self.level_two_two_details = "1- Show postings\n2- Show positions"
         self.level_two_five_details = "1- Normal search\n2- Proximity search"
+        self.level_three_five_details = "1- With Class\n2- Without Class"
+        self.level_four_five_details = "1- KNN\n2- Naive Bayes\n3- SVM\n4- Random Forest"
+        self.map_classifier = {1: 'KNN', 2: 'Naive Bayes', 3: 'SVM', 4: 'Random Forest'}
 
     def run_level_one(self, command):
         if command == '1':
@@ -75,32 +78,64 @@ class UI:
             print(corrected_query)
 
         elif command == '5':
-            flag = False
-            while not flag:
+            while True:
                 print(self.level_two_five_details)
-                c = input()
-                if c == '1':
-                    print("Enter your query:")
-                    query = input()
-                    retrieved_documents = self.se.query_lnc_ltc(query)
-                    print("Retrieved documents by rank:")
-                    print(retrieved_documents)
-                    flag = True
-
-                elif c == '2':
-                    print("Enter your query:")
-                    query = input()
-                    print("Enter window size:")
-                    window_size = int(input())
-                    retrieved_documents = self.se.query_lnc_ltc_proximity(query, window_size)
-                    print("Retrieved documents by rank:")
-                    print(retrieved_documents)
-                    flag = True
-
+                search_type = input()
+                if search_type == '1' or search_type == '2':
+                    break
                 else:
                     print("Invalid Command")
 
+            flag = False
+            while not flag:
+                print(self.level_three_five_details)
+                is_class = input()
+                if is_class == '1':
+                    while True:
+                        print(self.level_four_five_details)
+                        classifier = input()
+                        if classifier == '1' or classifier == '2' or classifier == '3' or classifier == '4':
+                            classifier_name = self.map_classifier[int(classifier)]
+                            break
+                        else:
+                            print("Invalid classifier number")
+                    print("Enter your query:")
+                    query = input()
+                    while True:
+                        print("Enter class number (1-World, 2-Sports, 3-Business, 4-Sci/Tech):")
+                        class_label = input()
+                        if class_label == '1' or class_label == '2' or class_label == '3' or class_label == '4':
+                            break
+                        else:
+                            print("Invalid class number")
 
+                    if search_type == '1':
+                        retrieved_documents = self.se.query_lnc_ltc(query, num_class=int(class_label),
+                                                                    classifier=classifier_name)
+                    else:
+                        print("Enter window size:")
+                        window_size = int(input())
+                        retrieved_documents = self.se.query_lnc_ltc_proximity(query, window_size,
+                                                                              num_class=int(class_label),
+                                                                              classifier=classifier_name)
+                    print("Retrieved documents by rank:")
+                    print(retrieved_documents)
+                    flag = True
+
+                elif is_class == '2':
+                    print("Enter your query:")
+                    query = input()
+                    if search_type == '1':
+                        retrieved_documents = self.se.query_lnc_ltc(query)
+                    else:
+                        print("Enter window size:")
+                        window_size = int(input())
+                        retrieved_documents = self.se.query_lnc_ltc_proximity(query, window_size)
+                    print("Retrieved documents by rank:")
+                    print(retrieved_documents)
+                    flag = True
+                else:
+                    print("Invalid Command")
 
         elif command == '6':
             print("Enter doc_id to remove")

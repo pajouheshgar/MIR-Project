@@ -9,6 +9,11 @@ import pandas as pnd
 from Code.Utils.preprocess import PersianTextPreProcessor, EnglishTextPreProcessor
 from Code.Utils.utils import *
 from Code.Utils.Config import Config
+from Code.Phase2.knn import KNNClassifier
+from Code.Phase2.svm import SVMClassifier
+from Code.Phase2.naive_bayes import NaiveBayesClassifier
+from Code.Phase2.random_forest import RandomForestClassifier
+from Code.Phase2.tf_idf_encoding import TfIdf
 
 logging.basicConfig(level=logging.INFO)
 
@@ -200,7 +205,38 @@ class SearchEngine:
                 for bigram in bigrams:
                     self.bigram_index[bigram].add(word)
 
-    def query_lnc_ltc(self, query):
+
+    def classify_docs(self, classifier):
+        english_text_preprocessor = EnglishTextPreProcessor()
+        training_data = pnd.read_csv(Config.ENGLISH_TRAINING_DATA_DIR)
+        tfidf = TfIdf("English", training_data, english_text_preprocessor)
+        if classifier == 'KNN':
+            clf = KNNClassifier(training_data, tfidf)
+        elif classifier == 'Naive Bayes':
+            clf = NaiveBayesClassifier(training_data, tfidf)
+        elif classifier == 'SVM':
+            clf = SVMClassifier(training_data, tfidf, C=0.5)
+        else:
+            clf = RandomForestClassifier(training_data, tfidf)
+
+        predicted_classes = np.zeros(shape=(self.n_documents,), dtype=int)
+        for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
+            str = ""
+            for word in doc_words:
+                str += word + " "
+            if classifier == 'KNN':
+                predicted_classes[i] = clf.predict(str[:-1], 5)
+            else:
+                predicted_classes[i] = clf.predict(str[:-1])
+
+        return predicted_classes
+
+    def query_lnc_ltc(self, query, num_class=None, classifier=None):
+        if num_class:
+            doc_labels = self.classify_docs(classifier)
+            check_class = True
+        else:
+            check_class = False
         query_terms = self.query_spell_correction(query)
         query_terms = self.preprocessor.stem(query_terms)
         query_terms = [q for q in query_terms if q in self.postings]
@@ -212,7 +248,11 @@ class SearchEngine:
             query_idf = np.log(self.n_documents / len(self.postings[query_term]))
             query_weight = query_tf * query_idf
             for doc_id in self.postings[query_term]:
-                score[doc_id - 1] += self.tf_table[0][doc_id - 1, self.tf_table[1].index(query_term)] * query_weight
+                if check_class:
+                    if doc_labels[doc_id - 1] == num_class:
+                        score[doc_id - 1] += self.tf_table[0][doc_id - 1, self.tf_table[1].index(query_term)] * query_weight
+                else:
+                    score[doc_id - 1] += self.tf_table[0][doc_id - 1, self.tf_table[1].index(query_term)] * query_weight
 
         # normalization
         for doc_id in range(self.n_documents):
@@ -227,7 +267,7 @@ class SearchEngine:
         sorted_id_score = sorted(id_score, key=lambda x: x[1], reverse=True)
         return sorted_id_score
 
-    def query_lnc_ltc_proximity(self, query, window_size=5):
+    def query_lnc_ltc_proximity(self, query, window_size=5, num_class=None, classifier=None):
         query_terms = self.query_spell_correction(query)
         query_terms = self.preprocessor.stem(query_terms)
         query_terms = [q for q in query_terms if q in self.postings]
