@@ -257,6 +257,8 @@ class SearchEngine:
         id_score = [x for x in id_score if self.is_valid[x[0]] and x[0] in candidate_docs]
 
         # now we should filter the documents based on proximity
+        if len(candidate_docs) == 0:
+            return []
         max_len = max([len(self.document_words[x]) for x in candidate_docs])
         valid_prox_docs = []
         for d in candidate_docs:
