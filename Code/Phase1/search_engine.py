@@ -268,6 +268,11 @@ class SearchEngine:
         return sorted_id_score
 
     def query_lnc_ltc_proximity(self, query, window_size=5, num_class=None, classifier=None):
+        if num_class:
+            doc_labels = self.classify_docs(classifier)
+            check_class = True
+        else:
+            check_class = False
         query_terms = self.query_spell_correction(query)
         query_terms = self.preprocessor.stem(query_terms)
         query_terms = [q for q in query_terms if q in self.postings]
@@ -281,8 +286,13 @@ class SearchEngine:
             query_weight = query_tf * query_idf
 
             for doc_id in self.postings[query_term]:
-                candidate_docs[doc_id - 1] += 1
-                score[doc_id - 1] += self.tf_table[0][doc_id - 1, self.tf_table[1].index(query_term)] * query_weight
+                if check_class:
+                    if doc_labels[doc_id - 1] == num_class:
+                        candidate_docs[doc_id - 1] += 1
+                        score[doc_id - 1] += self.tf_table[0][doc_id - 1, self.tf_table[1].index(query_term)] * query_weight
+                else:
+                    candidate_docs[doc_id - 1] += 1
+                    score[doc_id - 1] += self.tf_table[0][doc_id - 1, self.tf_table[1].index(query_term)] * query_weight
 
         candidate_docs = np.where(candidate_docs == len(set(query_terms)))[0].tolist()
         # normalization
