@@ -209,15 +209,16 @@ class SearchEngine:
     def classify_docs(self, classifier):
         english_text_preprocessor = EnglishTextPreProcessor()
         training_data = pnd.read_csv(Config.ENGLISH_TRAINING_DATA_DIR)
+        testing_data = pnd.read_csv(Config.ENGLISH_TEST_DATA_DIR)
         tfidf = TfIdf("English", training_data, english_text_preprocessor)
         if classifier == 'KNN':
-            clf = KNNClassifier(training_data, tfidf)
+            clf = KNNClassifier(training_data, testing_data, tfidf)
         elif classifier == 'Naive Bayes':
-            clf = NaiveBayesClassifier(training_data, tfidf)
+            clf = NaiveBayesClassifier(training_data, testing_data, tfidf)
         elif classifier == 'SVM':
-            clf = SVMClassifier(training_data, tfidf, C=0.5)
+            clf = SVMClassifier(training_data, testing_data, tfidf)
         else:
-            clf = RandomForestClassifier(training_data, tfidf)
+            clf = RandomForestClassifier(training_data, testing_data, tfidf)
 
         predicted_classes = np.zeros(shape=(self.n_documents,), dtype=int)
         for i, doc_words in enumerate(tqdm(self.document_words, position=0, leave=True)):
