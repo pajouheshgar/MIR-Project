@@ -14,19 +14,19 @@ logger = logging.getLogger("NaiveBayes")
 
 
 class NaiveBayesClassifier:
-    def __init__(self, data, tfidf):
+    def __init__(self, data, test_data, tfidf):
         self.data = data
+        self.test_data = test_data
         self.tfidf = tfidf
 
         self.n = len(self.data)
         self.n_train = int(self.n * Config.TRAINING_DATA_RATIO)
-        self.train_data = self.data[:self.n_train]
-        self.validation_data = self.data[self.n_train:]
+        self.train_data = self.data
 
         self.train_docs = self.train_data['Text']
-        self.validation_docs = self.validation_data['Text']
+        self.test_docs = self.test_data['Text']
         self.train_labels = self.train_data['Tag'].values
-        self.validation_labels = self.validation_data['Tag'].values
+        self.test_labels = self.test_data['Tag'].values
 
         self.class_priors = [np.sum(self.train_labels == i) / self.n_train for i in range(1, 5)]
 
@@ -52,6 +52,8 @@ class NaiveBayesClassifier:
                 vco[3] / self.class_total_vocabs[3],
             ])
 
+        self.report()
+
     def predict(self, doc):
         class_scores = [np.log(p) for p in self.class_priors]
         for c in range(4):
@@ -62,30 +64,36 @@ class NaiveBayesClassifier:
 
         return np.argmax(class_scores) + 1
 
-    def report_on_validation(self):
+    def report(self):
+        self.evaluate(self.train_docs, self.train_labels, set_name='Train')
+        self.evaluate(self.test_docs, self.test_labels, set_name='Test')
+
+    def evaluate(self, docs, labels, set_name):
         predictions = []
         true_labels = []
-        for doc, label in zip(self.validation_docs, self.validation_labels):
+        for doc, label in zip(docs, labels):
             predictions.append(self.predict(doc))
             true_labels.append(label)
 
         accuracy = accuracy_score(true_labels, predictions)
-        recall = recall_score(true_labels, predictions, average=None)
-        precision = precision_score(true_labels, predictions, average=None)
-        f1 = f1_score(true_labels, predictions, average='micro')
-        logger.info("Naive Bayes result on validation data\n"
-                    "\tAccuracy = {}\n"
-                    "\tRecall for classes = {}\n"
-                    "\tPrecision for classes= {}\n"
-                    "\tF1 = {}".format(accuracy, recall, precision, f1))
-
+        per_class_recall = recall_score(true_labels, predictions, average=None)
+        per_class_precision = precision_score(true_labels, predictions, average=None)
+        micro_f1 = f1_score(true_labels, predictions, average='micro')
+        macro_f1 = f1_score(true_labels, predictions, average='macro')
+        np.set_printoptions(precision=3)
+        logger.info(" On " + set_name + " Data")
+        logger.info("\tAccuracy = {:.3f}\n"
+                    "\tRecall_per class = {}\n"
+                    "\tPrecision_per class = {}\n"
+                    "\tmicro_F1 = {:.3f}\n"
+                    "\tmacro_F1 = {:.3f}".format(accuracy, per_class_recall, per_class_precision, micro_f1, macro_f1))
 
 if __name__ == '__main__':
     english_text_preprocessor = EnglishTextPreProcessor()
     training_data = pnd.read_csv(Config.ENGLISH_TRAINING_DATA_DIR)
+    testing_data = pnd.read_csv(Config.ENGLISH_TEST_DATA_DIR)
 
     tfidf = TfIdf("English", training_data, english_text_preprocessor)
 
-    nb_clf = NaiveBayesClassifier(training_data, tfidf)
-    nb_clf.report_on_validation()
-    print(nb_clf.predict("Italy-"))
+    nb_clf = NaiveBayesClassifier(training_data, testing_data, tfidf)
+    # print(nb_clf.predict("Italy-"))
