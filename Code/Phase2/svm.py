@@ -38,7 +38,7 @@ class SVMClassifier:
 
         self.report()
 
-    def predict(self, doc, C):
+    def predict(self, doc):
         doc_vector = self.tfidf.get_tfidf_vector(doc, sparse=False)
         return self.model.predict([doc_vector])[0]
 
