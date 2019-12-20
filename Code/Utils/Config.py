@@ -5,7 +5,7 @@ class Config:
     CACHE_DIR = DATA_DIR + "/Cache/"
 
     ENGLISH_TRAINING_DATA_DIR = DATA_DIR + "Phase2/phase2_train.csv"
-    ENGLISH_TEST_DATA_DIR = DATA_DIR + "Phase2/phase2_train.csv"
+    ENGLISH_TEST_DATA_DIR = DATA_DIR + "Phase2/phase2_test.csv"
 
     MAX_TF_IDF_FEATURES = 5000
     MAX_DF = 0.85
