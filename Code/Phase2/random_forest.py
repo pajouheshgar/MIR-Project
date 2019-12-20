@@ -62,7 +62,7 @@ class RandomForestClassifier:
                     "\tRecall_per class = {}\n"
                     "\tPrecision_per class = {}\n"
                     "\tmicro_F1 = {:.3f}\n"
-                    "\tmacro_F1 = {:.3f} On Validation Data".format(accuracy, per_class_recall, per_class_precision,
+                    "\tmacro_F1 = {:.3f}".format(accuracy, per_class_recall, per_class_precision,
                                                                     micro_f1, macro_f1))
 
 
