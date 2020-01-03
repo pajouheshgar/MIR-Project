@@ -1,6 +1,6 @@
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.mixture import GaussianMixture
-from Code.Phase3.vectorizers import TfIdf
+from Code.Phase3.vectorizers import TfIdf, word2vec
 from Code.Utils.Config import Config
 import pandas as pnd
 import logging
@@ -83,7 +83,13 @@ if __name__ == '__main__':
     all_text = [text for sublist in all_text for text in sublist]
     indices = data.index.values
     tfidf = TfIdf(all_text, indices, sparse=False)
+    word2vec = word2vec(all_text, indices)
 
-    # K_Means(tfidf).report()
-    # Gaussian_Mixture(tfidf).report()
+    K_Means(tfidf).report()
+    K_Means(word2vec).report()
+
+    Gaussian_Mixture(tfidf).report()
+    Gaussian_Mixture(word2vec).report()
+
     Hierarchical_Clustering(tfidf).report()
+    Hierarchical_Clustering(word2vec).report()
