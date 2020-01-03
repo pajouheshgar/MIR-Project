@@ -32,19 +32,6 @@ class TfIdf:
             return transforemd.toarray()[0, :]
 
 
-class Word2Vec:
-    def __init__(self, corpus, idx):
-        self.corpus = corpus
-        self.idx = idx
-        logger.info('Inferring word2vec from data')
-
-        self.vectorizer = TfidfVectorizer(max_df=Config.MAX_DF, max_features=Config.MAX_TF_IDF_FEATURES)
-        self.vectors = self.vectorizer.fit_transform(self.corpus)
-
-        if not sparse:
-            self.vectors = self.vectors.toarray()
-
-
 if __name__ == '__main__':
     data = pnd.read_csv(Config.CLUSTERING_DATA_DIR, encoding='latin1', index_col=0)
     all_text = data.values
