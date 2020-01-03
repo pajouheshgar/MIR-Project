@@ -11,3 +11,5 @@ class Config:
     MAX_DF = 0.85
 
     TRAINING_DATA_RATIO = 0.8
+
+    CLUSTERING_DATA_DIR = DATA_DIR + "Phase3/Data.csv"
