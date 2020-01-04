@@ -71,7 +71,7 @@ class K_Means:
                                                                  header=False)
 
 class Gaussian_Mixture:
-    def __init__(self, vectorizer, n_components=3, max_iter=300, covariance_type='diag'):
+    def __init__(self, vectorizer, n_components=3, max_iter=300, covariance_type='full'):
         self.vectorizer_name = vectorizer.name
         self.vectors = vectorizer.vectors
         self.idx = vectorizer.idx
@@ -95,6 +95,39 @@ class Gaussian_Mixture:
         pnd.DataFrame(data=self.clusters, index=self.idx).to_csv(Config.DATA_DIR + '/Phase3/Gaussian Mixture_' +
                                                                  self.vectorizer_name + '.csv',
                                                                  header=False)
+
+    def visualize(self, method='pca', n_iter=300):
+        plt.figure(figsize=(6, 6))
+        plt.title(
+            method.upper() + ' with Gaussian Mixture clusters on ' + self.vectorizer_name +
+            ' (# of Components = {})'.format(self.n_components))
+        colors = 'r', 'g', 'b', 'c', 'm', 'y', 'k', 'w', 'orange', 'purple'
+        cluster_colors = [colors[cluster_num] for cluster_num in self.clusters]
+
+        cluster_centers = self.gaussian_mixture.means_
+        input_features = np.concatenate((self.vectors, cluster_centers), axis=0)
+        if method == 'tsne':
+            dim_reduction = TSNE(n_components=2, n_iter=n_iter)
+        elif method == 'pca':
+            dim_reduction = PCA(n_components=2)
+        else:
+            raise Exception
+
+        transformed_features = dim_reduction.fit_transform(input_features)
+
+        plt.scatter(x=transformed_features[:-self.n_components, 0],
+                    y=transformed_features[:-self.n_components, 1],
+                    c=cluster_colors,
+                    s=4,
+                    marker='o')
+
+        plt.scatter(x=transformed_features[-self.n_components:, 0],
+                    y=transformed_features[-self.n_components:, 1],
+                    c='black',
+                    s=60,
+                    marker='x')
+
+        plt.show()
 
 class Hierarchical_Clustering:
     def __init__(self, vectorizer, n_clusters=3, linkage='ward'):
@@ -124,11 +157,19 @@ if __name__ == '__main__':
     tfidf = TfIdf(all_text, indices, sparse=False)
     # word2vec = word2vec(all_text, indices)
 
-    kmeans_tfidf = K_Means(tfidf, n_clusters=3)
+    kmeans_tfidf = K_Means(vectorizer=tfidf,
+                           n_clusters=3,
+                           max_iter=300)
     kmeans_tfidf.visualize(method='pca')
-    # K_Means(word2vec).report()
+    kmeans_tfidf.report()
 
-    # Gaussian_Mixture(tfidf).report()
+    gmm_tfidf = Gaussian_Mixture(vectorizer=tfidf,
+                     n_components=3,
+                     max_iter = 300,
+                     covariance_type='full')
+    gmm_tfidf.visualize(method='pca')
+    gmm_tfidf.report()
+
     # Gaussian_Mixture(word2vec).report()
 
     # Hierarchical_Clustering(tfidf).report()
