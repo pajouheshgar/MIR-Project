@@ -34,7 +34,7 @@ class TfIdf:
 
 class word2vec:
 
-    def __init__(self, corpus, idx, dim=1000, window=2, training_algorithm='skip', n_epochs=5):
+    def __init__(self, corpus, idx, dim=50, window=2, training_algorithm='skip', n_epochs=5):
         self.name = 'word2vec'
         self.corpus = corpus
         self.idx = idx
