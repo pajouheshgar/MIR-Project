@@ -18,7 +18,7 @@ class TfIdf:
         self.idx = idx
 
         logger.info("Inferring tf-idf from data")
-        self.vectorizer = TfidfVectorizer(max_df=Config.MAX_DF, max_features=Config.MAX_TF_IDF_FEATURES)
+        self.vectorizer = TfidfVectorizer(max_df=Config.MAX_DF, max_features=1000)
         self.vectors = self.vectorizer.fit_transform(self.corpus)
 
         if not sparse:
@@ -34,7 +34,7 @@ class TfIdf:
 
 class word2vec:
 
-    def __init__(self, corpus, idx, dim=100, window=5, training_algorithm='skip', n_epochs=5):
+    def __init__(self, corpus, idx, dim=1000, window=2, training_algorithm='skip', n_epochs=5):
         self.name = 'word2vec'
         self.corpus = corpus
         self.idx = idx
