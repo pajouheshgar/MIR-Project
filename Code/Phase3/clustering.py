@@ -1,7 +1,13 @@
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.mixture import GaussianMixture
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+
+import matplotlib.pyplot as plt
+
 from Code.Phase3.vectorizers import TfIdf, word2vec
 from Code.Utils.Config import Config
+
 import pandas as pnd
 import logging
 
@@ -10,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("Clustering")
 
 class K_Means:
-    def __init__(self, vectorizer, n_clusters=5, max_iter=300):
+    def __init__(self, vectorizer, n_clusters=3, max_iter=300):
         self.vectorizer_name = vectorizer.name
         self.vectors = vectorizer.vectors
         self.idx = vectorizer.idx
@@ -25,6 +31,33 @@ class K_Means:
     def transform(self, vector):
         return self.k_means.transform(vector)
 
+    def visualize(self, method='pca', n_iter=200):
+        if method == 'tsne':
+            dim_reduction = TSNE(n_components=2, n_iter=n_iter)
+        elif method == 'pca':
+            dim_reduction = PCA(n_components=2)
+        else:
+            raise Exception
+
+        transformed_features = dim_reduction.fit_transform(self.vectors)
+        plt.figure(figsize=(6, 6))
+        plt.title(method.upper() + ' with K-Means clusters on ' + self.vectorizer_name + ' (K = {})'.format(self.n_clusters))
+        colors = 'r', 'g', 'b', 'c', 'm', 'y', 'k', 'w', 'orange', 'purple'
+        cluster_colors = [colors[cluster_num] for cluster_num in self.clusters]
+        plt.scatter(x=transformed_features[:, 0],
+                    y=transformed_features[:, 1],
+                    c=cluster_colors,
+                    s=4,
+                    marker='o')
+        transformed_centers = dim_reduction.transform(self.k_means.cluster_centers_)
+        plt.scatter(x=transformed_centers[:, 0],
+                    y=transformed_centers[:, 1],
+                    c='black',
+                    s=60,
+                    marker='x')
+
+        plt.show()
+
     def report(self):
         logger.info("Saving clusters into a file")
         pnd.DataFrame(data=self.clusters, index=self.idx).to_csv(Config.DATA_DIR + '/Phase3/k_means_' +
@@ -32,7 +65,7 @@ class K_Means:
                                                                  header=False)
 
 class Gaussian_Mixture:
-    def __init__(self, vectorizer, n_components=5, max_iter=300, covariance_type='diag'):
+    def __init__(self, vectorizer, n_components=3, max_iter=300, covariance_type='diag'):
         self.vectorizer_name = vectorizer.name
         self.vectors = vectorizer.vectors
         self.idx = vectorizer.idx
@@ -58,7 +91,7 @@ class Gaussian_Mixture:
                                                                  header=False)
 
 class Hierarchical_Clustering:
-    def __init__(self, vectorizer, n_clusters=5, linkage='ward'):
+    def __init__(self, vectorizer, n_clusters=3, linkage='ward'):
         self.vectorizer_name = vectorizer.name
         self.vectors = vectorizer.vectors
         self.idx = vectorizer.idx
@@ -83,13 +116,14 @@ if __name__ == '__main__':
     all_text = [text for sublist in all_text for text in sublist]
     indices = data.index.values
     tfidf = TfIdf(all_text, indices, sparse=False)
-    word2vec = word2vec(all_text, indices)
+    # word2vec = word2vec(all_text, indices)
 
-    K_Means(tfidf).report()
-    K_Means(word2vec).report()
+    kmeans_tfidf = K_Means(tfidf, n_clusters=3)
+    kmeans_tfidf.visualize()
+    # K_Means(word2vec).report()
 
-    Gaussian_Mixture(tfidf).report()
-    Gaussian_Mixture(word2vec).report()
+    # Gaussian_Mixture(tfidf).report()
+    # Gaussian_Mixture(word2vec).report()
 
-    Hierarchical_Clustering(tfidf).report()
-    Hierarchical_Clustering(word2vec).report()
+    # Hierarchical_Clustering(tfidf).report()
+    # Hierarchical_Clustering(word2vec).report()
