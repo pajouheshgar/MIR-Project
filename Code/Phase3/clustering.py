@@ -1,9 +1,8 @@
 from sklearn.cluster import KMeans, AgglomerativeClustering
-from scipy.cluster.hierarchy import dendrogram
+import scipy.cluster.hierarchy as sch
 from sklearn.mixture import GaussianMixture
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
-from sklearn.neighbors import kneighbors_graph
 
 import matplotlib.pyplot as plt
 
@@ -137,28 +136,25 @@ class Gaussian_Mixture:
 
 
 class Hierarchical_Clustering:
-    def __init__(self, vectorizer, n_clusters=3, linkage='ward'):
+    def __init__(self, vectorizer, max_d, n_clusters=3, linkage='ward'):
         self.vectorizer_name = vectorizer.name
         self.vectors = vectorizer.vectors
         self.idx = vectorizer.idx
 
         self.n_clusters = n_clusters
         self.linkage = linkage
+        self.max_d = max_d
 
         logger.info("Inferring clusters using Hierarchical clustering over vectors of " + self.vectorizer_name)
-        knn_graph = kneighbors_graph(X=self.vectors, n_neighbors=30)
-        self.hierarchical_clustering = AgglomerativeClustering(n_clusters=n_clusters,
-                                                               linkage=self.linkage,
-                                                               connectivity=knn_graph)
+        self.hierarchical_clustering = AgglomerativeClustering(n_clusters=3,
+                                                               linkage=self.linkage)
         self.clusters = self.hierarchical_clustering.fit_predict(self.vectors)
 
     def plot_dendrogram(self):
-        model = self.hierarchical_clustering
-        children = model.children_
-        distance = np.arange(children.shape[0])
-        no_of_observations = np.arange(2, children.shape[0] + 2)
-        linkage_matrix = np.column_stack([children, distance, no_of_observations]).astype(float)
-        dendrogram(linkage_matrix, labels=model.labels_, p=3, truncate_mode='level')
+        m = sch.linkage(self.vectors, method=self.linkage)
+        sch.dendrogram(m, truncate_mode='lastp', p=20, leaf_rotation=90.)
+        plt.axhline(y=self.max_d, c='k')
+        plt.title('Truncated Dendrogram')
         plt.show()
 
     def visualize(self, method='pca', n_iter=300):
@@ -198,7 +194,9 @@ if __name__ == '__main__':
     all_text = data.values
     all_text = [text for sublist in all_text for text in sublist]
     indices = data.index.values
-    vectorizers = [TfIdf(all_text, indices, sparse=False), word2vec(all_text, indices)]
+    vectorizers = [TfIdf(all_text, indices, sparse=False),
+                   word2vec(all_text, indices, n_epochs=50, dim=300)]
+
     for vectorizer in vectorizers:
         kmeans_tfidf = K_Means(vectorizer=vectorizer,
                                n_clusters=3,
@@ -213,7 +211,11 @@ if __name__ == '__main__':
         gmm_tfidf.visualize(method='pca')
         gmm_tfidf.report()
 
+    vectorizers = [TfIdf(all_text, indices, sparse=False, max_features=5000),
+                   word2vec(all_text, indices, n_epochs=50, dim=100)]
+    for vectorizer in vectorizers:
         hierarchical = Hierarchical_Clustering(vectorizer=vectorizer,
+                                               max_d=4 if vectorizer.name=='tfidf' else 40,
                                                n_clusters=3,
                                                linkage='ward')
         hierarchical.plot_dendrogram()
