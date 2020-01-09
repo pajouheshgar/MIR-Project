@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger("Clustering")
 
+
 class K_Means:
     def __init__(self, vectorizer, n_clusters=3, max_iter=300):
         self.vectorizer_name = vectorizer.name
@@ -72,6 +73,7 @@ class K_Means:
         pnd.DataFrame(data=self.clusters, index=self.idx).to_csv(Config.DATA_DIR + '/Phase3/k_means_' +
                                                                  self.vectorizer_name + '.csv',
                                                                  header=False)
+
 
 class Gaussian_Mixture:
     def __init__(self, vectorizer, n_components=3, max_iter=300, covariance_type='full'):
@@ -133,6 +135,7 @@ class Gaussian_Mixture:
 
         plt.show()
 
+
 class Hierarchical_Clustering:
     def __init__(self, vectorizer, n_clusters=3, linkage='ward'):
         self.vectorizer_name = vectorizer.name
@@ -189,6 +192,7 @@ class Hierarchical_Clustering:
                                                                  self.vectorizer_name + '.csv',
                                                                  header=False)
 
+
 if __name__ == '__main__':
     data = pnd.read_csv(Config.CLUSTERING_DATA_DIR, encoding='latin1', index_col=0)
     all_text = data.values
@@ -203,9 +207,9 @@ if __name__ == '__main__':
         kmeans_tfidf.report()
 
         gmm_tfidf = Gaussian_Mixture(vectorizer=vectorizer,
-                         n_components=3,
-                         max_iter = 300,
-                         covariance_type='full')
+                                     n_components=3,
+                                     max_iter=300,
+                                     covariance_type='full')
         gmm_tfidf.visualize(method='pca')
         gmm_tfidf.report()
 

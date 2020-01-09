@@ -24,7 +24,6 @@ class TfIdf:
         if not sparse:
             self.vectors = self.vectors.toarray()
 
-
     def transform(self, doc, sparse=True):
         transforemd = self.vectorizer.transform(doc)
         if sparse:
@@ -32,8 +31,8 @@ class TfIdf:
         else:
             return transforemd.toarray()[0, :]
 
-class word2vec:
 
+class word2vec:
     def __init__(self, corpus, idx, dim=50, window=2, training_algorithm='skip', n_epochs=5):
         self.name = 'word2vec'
         self.corpus = corpus
@@ -66,6 +65,7 @@ class word2vec:
 
     def transform(self, doc):
         return self.vectorizer.transform(doc)
+
 
 if __name__ == '__main__':
     data = pnd.read_csv(Config.CLUSTERING_DATA_DIR, encoding='latin1', index_col=0)
